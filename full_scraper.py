@@ -15,9 +15,6 @@ CSV_FILE = "jobs.csv"
 
 
 def build_url(keyword="", location="", page=1):
-    """
-    Build search URL with filters and pagination.
-    """
     params = []
 
     if keyword:
@@ -42,12 +39,10 @@ def scrape_page(url):
 
     jobs = []
 
-    # Adjust selector if site structure changes
     for card in soup.select("a[data-cy='job-link']"):
         title = card.get_text(strip=True)
         link = "https://www.jobs.ch" + card.get("href", "")
 
-        # Try to find company and location nearby
         container = card.find_parent("article")
         company = ""
         location = ""
@@ -91,7 +86,7 @@ def scrape_all(keyword="", location="", max_pages=5):
 
         all_jobs.extend(jobs)
 
-        time.sleep(2)  # polite delay
+        time.sleep(2)
 
     return all_jobs
 
@@ -105,10 +100,7 @@ def save_to_csv(jobs):
     if os.path.exists(CSV_FILE):
         existing_df = pd.read_csv(CSV_FILE)
         combined = pd.concat([existing_df, new_df], ignore_index=True)
-
-        # Remove duplicates based on link
         combined.drop_duplicates(subset="link", inplace=True)
-
         combined.to_csv(CSV_FILE, index=False)
     else:
         new_df.to_csv(CSV_FILE, index=False)
@@ -138,4 +130,5 @@ if __name__ == "__main__":
         run_scraper()
 
         print("Sleeping for 4 hours...\n")
-        time.sleep(4 * 60 * 60)  # 4 hours
+        time.sleep(4 * 60 * 60) 
+
