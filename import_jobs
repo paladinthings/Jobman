@@ -1,0 +1,45 @@
+from app.database import SessionLocal
+from app.models import Job
+from app.salary import predict_salary
+
+db = SessionLocal()
+
+mock_jobs = [
+    {
+        "title": "Software Engineer",
+        "company": "Tech AG",
+        "location": "Zurich",
+        "canton": "ZH",
+        "description": "Develop backend services.",
+        "url": "https://example.com/job1"
+    },
+    {
+        "title": "Junior Electrician",
+        "company": "Power GmbH",
+        "location": "St. Gallen",
+        "canton": "SG",
+        "description": "Assist with installations.",
+        "url": "https://example.com/job2"
+    }
+]
+
+for j in mock_jobs:
+    salary = predict_salary(j["title"], j["canton"])
+
+    job = Job(
+        title=j["title"],
+        company=j["company"],
+        location=j["location"],
+        canton=j["canton"],
+        description=j["description"],
+        predicted_salary=salary,
+        source="mock",
+        original_url=j["url"]
+    )
+
+    db.add(job)
+
+db.commit()
+db.close()
+
+print("Mock jobs imported.")
