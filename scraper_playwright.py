@@ -8,7 +8,7 @@ CSV_FILE = "jobs.csv"
 
 
 # ==============================
-# CSV STORAGE
+# Export (csv @ root folder)
 # ==============================
 def save_to_csv(jobs):
     new_df = pd.DataFrame(jobs)
@@ -19,7 +19,7 @@ def save_to_csv(jobs):
     else:
         combined = new_df
 
-    # Only remove duplicates if ALL text fields match
+    # Das hier eliminiert duplikate WENN der Inhalt ALLER Felder identisch ist
     text_fields = ["title", "company", "location", "link", "source"]
     combined.drop_duplicates(subset=text_fields, inplace=True)
 
@@ -139,7 +139,7 @@ def scrape_jobscout24(page, keyword, location, max_pages=100):
 
 
 # ==============================
-# MAIN SCRAPER
+# Die Maschine
 # ==============================
 def run_scraper():
     print(f"\nRunning scraper at {datetime.now()}")
