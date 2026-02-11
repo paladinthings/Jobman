@@ -3,47 +3,94 @@
 <head>
     <title>Job Dashboard</title>
     <style>
+        :root {
+            --bg: #f5f5f5;
+            --text: #000;
+            --table-bg: white;
+            --header-bg: #333;
+            --header-text: white;
+            --row-hover: #f1f1f1;
+        }
+
+        body.dark {
+            --bg: #121212;
+            --text: #e0e0e0;
+            --table-bg: #1e1e1e;
+            --header-bg: #222;
+            --header-text: #fff;
+            --row-hover: #2a2a2a;
+        }
+
         body {
             font-family: Arial, sans-serif;
             margin: 40px;
-            background: #f5f5f5;
+            background: var(--bg);
+            color: var(--text);
+            transition: 0.3s;
         }
+
         h1 {
+            margin-bottom: 10px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
         }
+
         form {
             margin-bottom: 20px;
         }
+
         input, select, button {
             padding: 8px;
             margin-right: 10px;
         }
+
         table {
             border-collapse: collapse;
             width: 100%;
-            background: white;
+            background: var(--table-bg);
         }
+
         th, td {
             padding: 10px;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #8883;
             text-align: left;
         }
+
         th {
-            background: #333;
-            color: white;
+            background: var(--header-bg);
+            color: var(--header-text);
         }
+
         tr:hover {
-            background: #f1f1f1;
+            background: var(--row-hover);
         }
+
         a {
-            color: #1a73e8;
+            color: #4da3ff;
             text-decoration: none;
+        }
+
+        .toggle {
+            cursor: pointer;
+            padding: 6px 12px;
+            border: none;
+            background: #666;
+            color: white;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
 
-<h1>Job Dashboard</h1>
+<div class="top-bar">
+    <h1>Job Dashboard</h1>
+    <button class="toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
+</div>
 
 <form method="get">
     <input type="text" name="keyword" placeholder="Keyword">
@@ -77,6 +124,22 @@
     </tr>
     {% endfor %}
 </table>
+
+<script>
+    function toggleTheme() {
+        const body = document.body;
+        body.classList.toggle("dark");
+        localStorage.setItem("theme", body.classList.contains("dark") ? "dark" : "light");
+    }
+
+    // Load saved theme
+    window.onload = function() {
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "dark") {
+            document.body.classList.add("dark");
+        }
+    };
+</script>
 
 </body>
 </html>
