@@ -16,10 +16,14 @@ def save_to_csv(jobs):
     if os.path.exists(CSV_FILE):
         existing_df = pd.read_csv(CSV_FILE)
         combined = pd.concat([existing_df, new_df], ignore_index=True)
-        combined.drop_duplicates(subset="link", inplace=True)
-        combined.to_csv(CSV_FILE, index=False)
     else:
-        new_df.to_csv(CSV_FILE, index=False)
+        combined = new_df
+
+    # Only remove duplicates if ALL text fields match
+    text_fields = ["title", "company", "location", "link", "source"]
+    combined.drop_duplicates(subset=text_fields, inplace=True)
+
+    combined.to_csv(CSV_FILE, index=False)
 
 
 # ==============================
@@ -171,3 +175,4 @@ if __name__ == "__main__":
         run_scraper()
         print("Sleeping for 4 hours...\n")
         time.sleep(4 * 60 * 60)
+
