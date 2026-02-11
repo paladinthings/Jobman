@@ -116,9 +116,9 @@ def run_scraper():
     print(f"\nRunning scraper at {datetime.now()}")
 
     jobs = scrape_all(
-        keyword="engineer",   # change filter here
-        location="Zurich",    # change filter here
-        max_pages=5           # adjust as needed
+        keyword="ICT",   # change filter here
+        location="",    # change filter here
+        max_pages=100           # adjust as needed
     )
 
     if jobs:
@@ -134,5 +134,6 @@ if __name__ == "__main__":
 
         print("Sleeping for 4 hours...\n")
         time.sleep(4 * 60 * 60) 
+
 
 
