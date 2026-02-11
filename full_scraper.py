@@ -67,8 +67,11 @@ def scrape_page(url):
 
     return jobs
 
+#Change Keyword or location below to filter different region or jobs type. 
+#OBACHT: by default the scraper only looks at the first 100 pages (about 2000 lines of CSV)
+#API Limits are not currently known. API lockout or IP Ban might occur.
 
-def scrape_all(keyword="", location="", max_pages=5):
+def scrape_all(keyword="", location="", max_pages=100):
     """
     Scrape multiple pages.
     """
@@ -131,4 +134,5 @@ if __name__ == "__main__":
 
         print("Sleeping for 4 hours...\n")
         time.sleep(4 * 60 * 60) 
+
 
