@@ -396,6 +396,51 @@
     border-bottom: 1px solid #8883;
 }
 
+.chat-window {
+    position: fixed;
+    width: 400px;
+    height: 350px;
+    background: var(--panel);
+    border: 2px solid #555;
+    top: 180px;
+    left: 220px;
+    resize: both;
+    overflow: hidden;
+    z-index: 1700;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    background: var(--bg);
+    font-size: 0.9em;
+}
+
+.chat-input {
+    display: flex;
+    border-top: 1px solid #666;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    background: var(--bg);
+    color: var(--text);
+}
+
+.chat-input button {
+    padding: 8px 12px;
+    border: none;
+    background: #4da3ff;
+    color: white;
+    cursor: pointer;
+}
+
+
 
     </style>
 </head>
@@ -423,13 +468,15 @@
     </form>
 
     <!-- Right: buttons -->
-    <div class="top-buttons">
-		<button class="toggle" onclick="openResultsWindow()">Suche</button>
-		<button class="toggle" onclick="openFavoritesWindow()">Merkliste</button>
-		<button class="toggle" onclick="openKanbanWindow()">Bewerbungsboard</button>
-		<button class="toggle" onclick="openNotesWindow()">Notizen</button>
-		<button class="toggle" onclick="toggleTheme()">Dark Mode</button>
+    <<div class="top-buttons">
+    <button class="toggle" onclick="openResultsWindow()">Results</button>
+    <button class="toggle" onclick="openFavoritesWindow()">Favorites</button>
+    <button class="toggle" onclick="openKanbanWindow()">Kanban</button>
+    <button class="toggle" onclick="openNotesWindow()">Notes</button>
+    <button class="toggle" onclick="openChatWindow()">Chat</button>
+    <button class="toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
 </div>
+
 
 </div>
 
@@ -478,6 +525,85 @@
 <div id="windowContainer"></div>
 
 <script>
+
+function openChatWindow() {
+    if (document.getElementById("chatWindow")) return;
+
+    const container = document.getElementById("windowContainer");
+
+    const win = document.createElement("div");
+    win.className = "chat-window";
+    win.id = "chatWindow";
+
+    win.innerHTML = `
+        <div class="job-header">
+            <span>Global Chat</span>
+            <div class="job-controls">
+                <span onclick="this.closest('.chat-window').remove()">✖</span>
+            </div>
+        </div>
+        <div class="chat-body" id="chatMessages"></div>
+        <div class="chat-input">
+            <input type="text" id="chatInput" placeholder="Type a message...">
+            <button onclick="sendChatMessage()">Send</button>
+        </div>
+    `;
+
+    container.appendChild(win);
+
+    loadWindowState(win, "chat");
+    makeDraggable(win, "chat");
+
+    loadChatMessages();
+}
+
+function getChatLog() {
+    return JSON.parse(localStorage.getItem("chatLog") || "[]");
+}
+
+function saveChatLog(log) {
+    localStorage.setItem("chatLog", JSON.stringify(log));
+}
+
+function loadChatMessages() {
+    const container = document.getElementById("chatMessages");
+    if (!container) return;
+
+    const log = getChatLog();
+    container.innerHTML = "";
+
+    log.forEach(msg => {
+        const div = document.createElement("div");
+        div.textContent = `[${msg.time}] ${msg.text}`;
+        container.appendChild(div);
+    });
+
+    container.scrollTop = container.scrollHeight;
+}
+
+function sendChatMessage() {
+    const input = document.getElementById("chatInput");
+    if (!input) return;
+
+    const text = input.value.trim();
+    if (!text) return;
+
+    const log = getChatLog();
+
+    const now = new Date();
+    const time = now.toLocaleTimeString();
+
+    log.push({
+        text: text,
+        time: time
+    });
+
+    saveChatLog(log);
+    input.value = "";
+    loadChatMessages();
+}
+
+
 
 function rebindResultsInteractions(container) {
     // Fix View buttons
@@ -1011,6 +1137,7 @@ function openFavoritesWindow() {
 
 setInterval(() => {
     saveWorkspace();
+	loadChatMessages();
 }, 10000);
 
 
@@ -1031,6 +1158,12 @@ window.onload = function() {
 		
 	if (localStorage.getItem("window_results"))
     openResultsWindow();
+	
+	else if (w.id === "chatWindow") {
+    openChatWindow();
+    win = document.getElementById("chatWindow");
+}
+
 };
 
 function removeFavorite(link) {
