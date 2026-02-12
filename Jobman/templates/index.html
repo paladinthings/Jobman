@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Job Dashboard</title>
+    <title>JOBMAN</title>
     <style>
         :root {
             --bg: #f5f5f5;
@@ -29,16 +29,29 @@
         }
 
         .favorites-panel {
-            background: var(--panel);
-            padding: 10px;
-            border-radius: 6px;
-            margin: 15px 0;
-            text-align: center;
-        }
+    background: var(--panel);
+    padding: 10px;
+    border-radius: 6px;
+    margin: 15px auto;
+    width: 60%;
+    border: 2px solid #888;
+    text-align: center;
+}
 
-        .favorite-item {
-            margin: 5px 0;
-        }
+.favorites-container {
+    height: 140px;           /* fixed height */
+    overflow-y: auto;        /* vertical scroll */
+    margin-top: 10px;
+    padding: 5px;
+    border: 1px solid #8885; /* inner border */
+    background: var(--bg);
+}
+
+.favorite-item {
+    margin: 5px 0;
+    padding: 4px;
+}
+
 
         table {
             width: 100%;
@@ -112,21 +125,40 @@
             cursor: pointer;
             margin-top: 10px;
         }
-    </style>
-</head>
-<body>
+		/* Larger search bar */
+		
+.notes-window {
+    position: fixed;
+    width: 400px;
+    height: 300px;
+    background: var(--panel);
+    border: 2px solid #555;
+    top: 150px;
+    left: 150px;
+    resize: both;
+    overflow: hidden;
+    z-index: 1500;
+    display: flex;
+    flex-direction: column;
+}
 
-<div class="top-bar">
-    <h1>Job Dashboard</h1>
-    <button class="toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
-</div>
+.notes-body {
+    flex: 1;
+    padding: 5px;
+}
 
-<div class="favorites-panel">
-    <h3>⭐ Favorites</h3>
-    <div id="favoritesList"></div>
-</div>
-
-<form method="get">
+.notes-body textarea {
+    width: 100%;
+    height: 100%;
+    resize: none;
+    background: var(--bg);
+    color: var(--text);
+    border: none;
+    padding: 8px;
+    font-family: inherit;
+}
+		
+<form method="get" class="search-form">
     <input type="text" name="keyword" placeholder="Keyword">
     <input type="text" name="location" placeholder="Location">
     <select name="source">
@@ -138,39 +170,485 @@
     <button type="submit">Filter</button>
 </form>
 
-<table>
-    <tr>
-        <th>★</th>
-        <th>Title</th>
-        <th>Company</th>
-        <th>Location</th>
-        <th>Source</th>
-        <th>View</th>
-    </tr>
-    {% for job in jobs %}
-    <tr>
-        <td>
-            <span class="star"
-                  data-link="{{ job.link }}"
-                  data-title="{{ job.title }}"
-                  onclick="toggleFavorite(this)">☆</span>
-        </td>
-        <td>{{ job.title }}</td>
-        <td>{{ job.company }}</td>
-        <td>{{ job.location }}</td>
-        <td>{{ job.source }}</td>
-        <td>
-            <button onclick="openJobWindow('{{ job.link }}','{{ job.title }}','{{ job.source }}')">
-                View
-            </button>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+
+<div class="favorites-panel">
+    <h3>⭐ Merkliste</h3>
+    <div class="favorites-container">
+        <div id="favoritesList"></div>
+    </div>
+</div>
+
+
+.favorites-container {
+    height: 140px;
+    overflow-y: auto;
+    margin-top: 10px;
+    padding: 5px;
+    border: 1px solid #8885;
+    background: var(--bg);
+}
+
+.favorite-item {
+    margin: 5px 0;
+    padding: 6px;
+    cursor: pointer;
+    color: var(--text);
+}
+
+.favorite-item:hover {
+    background: #8882;
+}
+
+.kanban-window {
+    position: fixed;
+    width: 700px;
+    height: 350px;
+    background: var(--panel);
+    border: 2px solid #555;
+    top: 120px;
+    left: 200px;
+    resize: both;
+    overflow: hidden;
+    z-index: 1600;
+    display: flex;
+    flex-direction: column;
+}
+
+.kanban-body {
+    display: flex;
+    flex: 1;
+    gap: 10px;
+    padding: 10px;
+}
+
+.kanban-column {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid #777;
+    border-radius: 6px;
+    padding: 5px;
+    overflow-y: auto;
+}
+
+.kanban-column h4 {
+    text-align: center;
+    margin: 5px 0;
+}
+
+.kanban-card {
+    background: var(--panel);
+    border: 1px solid #666;
+    padding: 6px;
+    margin: 6px 0;
+    cursor: grab;
+    font-size: 0.9em;
+    position: relative;
+}
+
+.delete-card {
+    position: absolute;
+    right: 5px;
+    top: 2px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.title-area {
+    display: flex;
+    flex-direction: column;
+}
+
+.install-bar {
+    width: 250px;
+    height: 10px;
+    background: #5553;
+    border: 1px solid #888;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.install-progress {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4da3ff, #7cffc4);
+    transition: width 0.2s linear;
+}
+
+.favorites-window {
+    position: fixed;
+    width: 350px;
+    height: 300px;
+    background: var(--panel);
+    border: 2px solid #555;
+    top: 140px;
+    left: 160px;
+    resize: both;
+    overflow: hidden;
+    z-index: 1550;
+    display: flex;
+    flex-direction: column;
+}
+
+.favorites-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.favorite-item {
+    margin: 5px 0;
+    padding: 6px;
+    cursor: pointer;
+    color: var(--text);
+    border: 1px solid #6664;
+    border-radius: 4px;
+}
+
+.favorite-item:hover {
+    background: #8882;
+}
+
+.top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+/* Title area stays left */
+.title-area {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Center search bar */
+.search-form {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex: 1;
+}
+
+/* Make search inputs twice as large */
+.search-form input,
+.search-form select,
+.search-form button {
+    padding: 16px;
+    font-size: 1.4em;
+}
+
+/* Keep buttons grouped on right */
+.top-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.favorite-item {
+    margin: 5px 0;
+    padding: 6px 28px 6px 8px;
+    cursor: pointer;
+    color: var(--text);
+    border: 1px solid #6664;
+    border-radius: 4px;
+    position: relative;
+}
+
+.favorite-remove {
+    position: absolute;
+    right: 6px;
+    top: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #c44;
+}
+
+.results-window {
+    position: fixed;
+    width: 800px;
+    height: 450px;
+    background: var(--panel);
+    border: 2px solid #555;
+    top: 160px;
+    left: 200px;
+    resize: both;
+    overflow: hidden;
+    z-index: 1500;
+    display: flex;
+    flex-direction: column;
+}
+
+.results-body {
+    flex: 1;
+    overflow: auto;
+    padding: 8px;
+}
+
+.results-body table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.results-body th,
+.results-body td {
+    padding: 8px;
+    border-bottom: 1px solid #8883;
+}
+
+
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <!-- Left: title + install bar -->
+    <div class="title-area">
+        <div class="install-bar">
+            <div id="installProgress" class="install-progress"></div>
+        </div>
+    </div>
+
+    <!-- Center: search bar -->
+    <form method="get" class="search-form">
+        <input type="text" name="keyword" placeholder="Suchbegriff">
+        <input type="text" name="location" placeholder="Ort">
+        <select name="source">
+            <option value="">Alle Quellen</option>
+            <option value="jobs.ch">jobs.ch</option>
+            <option value="indeed.ch">indeed.ch</option>
+            <option value="jobscout24.ch">jobscout24.ch</option>
+        </select>
+        <button type="submit">Filter</button>
+    </form>
+
+    <!-- Right: buttons -->
+    <div class="top-buttons">
+		<button class="toggle" onclick="openResultsWindow()">Suche</button>
+		<button class="toggle" onclick="openFavoritesWindow()">Merkliste</button>
+		<button class="toggle" onclick="openKanbanWindow()">Bewerbungsboard</button>
+		<button class="toggle" onclick="openNotesWindow()">Notizen</button>
+		<button class="toggle" onclick="toggleTheme()">Dark Mode</button>
+</div>
+
+</div>
+
+
+
+
+
+
+
+<div id="resultsTemplate" style="display:none;">
+    <table>
+        <tr>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+        </tr>
+        {% for job in jobs %}
+        <tr>
+            <td>
+                <span class="star"
+                      data-link="{{ job.link }}"
+                      data-title="{{ job.title }}"
+                      onclick="toggleFavorite(this)">☆</span>
+            </td>
+            <td>{{ job.title }}</td>
+            <td>{{ job.company }}</td>
+            <td>{{ job.location }}</td>
+            <td>{{ job.source }}</td>
+            <td>
+                <button
+					data-link="{{ job.link }}"
+					data-title="{{ job.title }}">
+					Anzeigen
+				</button>
+
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
 
 <div id="windowContainer"></div>
 
 <script>
+
+function rebindResultsInteractions(container) {
+    // Fix View buttons
+    container.querySelectorAll("button[data-link]").forEach(btn => {
+        const link = btn.dataset.link;
+        const title = btn.dataset.title;
+
+        btn.onclick = () => openJobWindow(link, title);
+    });
+
+    // Fix favorite stars
+    container.querySelectorAll(".star").forEach(star => {
+        const link = star.dataset.link;
+        const title = star.dataset.title;
+
+        star.onclick = () => toggleFavorite({
+            dataset: { link, title },
+            classList: star.classList,
+            textContent: star.textContent
+        });
+    });
+}
+
+
+function saveWorkspace() {
+    const windows = document.querySelectorAll("#windowContainer > div");
+    const workspace = [];
+
+    windows.forEach(win => {
+        const id = win.id || win.dataset.type;
+        if (!id) return;
+
+        workspace.push({
+            id: id,
+            type: win.dataset.type || id,
+            top: win.style.top,
+            left: win.style.left,
+            width: win.style.width,
+            height: win.style.height,
+            content: getWindowContent(win)
+        });
+    });
+
+    localStorage.setItem("workspaceState", JSON.stringify(workspace));
+}
+
+function getWindowContent(win) {
+    if (win.id === "notesWindow") {
+        const textarea = win.querySelector("textarea");
+        return textarea ? textarea.value : "";
+    }
+
+    if (win.id === "kanbanWindow") {
+        const data = JSON.parse(localStorage.getItem("kanbanData") || "{}");
+        return data;
+    }
+
+    if (win.id === "favoritesWindow") {
+        return JSON.parse(localStorage.getItem("favorites") || "[]");
+    }
+
+    if (win.dataset.type === "job") {
+        return {
+            title: win.dataset.title,
+            link: win.dataset.link
+        };
+    }
+
+    return null;
+}
+
+function restoreWorkspace() {
+    const workspace = JSON.parse(localStorage.getItem("workspaceState") || "[]");
+
+    workspace.forEach(w => {
+        let win;
+
+        if (w.id === "notesWindow") {
+            openNotesWindow();
+            win = document.getElementById("notesWindow");
+
+            if (win && w.content) {
+                const textarea = win.querySelector("textarea");
+                if (textarea) textarea.value = w.content;
+            }
+        }
+
+        else if (w.id === "kanbanWindow") {
+            localStorage.setItem("kanbanData", JSON.stringify(w.content || {}));
+            openKanbanWindow();
+            win = document.getElementById("kanbanWindow");
+        }
+
+        else if (w.id === "favoritesWindow") {
+            localStorage.setItem("favorites", JSON.stringify(w.content || []));
+            openFavoritesWindow();
+            win = document.getElementById("favoritesWindow");
+        }
+
+        else if (w.type === "job") {
+            openJobWindow(w.content.link, w.content.title);
+            win = [...document.querySelectorAll(".job-window")]
+                .find(el => el.dataset.link === w.content.link);
+        }
+
+        if (win) {
+            win.style.top = w.top;
+            win.style.left = w.left;
+            win.style.width = w.width;
+            win.style.height = w.height;
+        }
+    });
+}
+
+
+function openResultsWindow() {
+    if (document.getElementById("resultsWindow")) return;
+
+    const container = document.getElementById("windowContainer");
+
+    const win = document.createElement("div");
+    win.className = "results-window";
+    win.id = "resultsWindow";
+
+    win.innerHTML = `
+        <div class="job-header">
+            <span>Job Results</span>
+            <div class="job-controls">
+                <span onclick="this.closest('.results-window').remove()">✖</span>
+            </div>
+        </div>
+        <div class="results-body" id="resultsBody"></div>
+    `;
+
+    container.appendChild(win);
+
+    loadWindowState(win, "results");
+    makeDraggable(win, "results");
+
+    // Inject table content
+    const template = document.getElementById("resultsTemplate");
+    const body = win.querySelector("#resultsBody");
+    body.innerHTML = template.innerHTML;
+
+    // Re-bind buttons and stars
+    rebindResultsInteractions(body);
+}
+
+
+
+function saveWindowState(win, id) {
+    const state = {
+        top: win.style.top,
+        left: win.style.left,
+        width: win.style.width,
+        height: win.style.height
+    };
+    localStorage.setItem("window_" + id, JSON.stringify(state));
+}
+
+function loadWindowState(win, id) {
+    const state = JSON.parse(localStorage.getItem("window_" + id) || "null");
+    if (!state) return;
+
+    win.style.top = state.top;
+    win.style.left = state.left;
+    win.style.width = state.width;
+    win.style.height = state.height;
+}
+
+
 /* THEME */
 function toggleTheme() {
     document.body.classList.toggle("dark");
@@ -193,6 +671,7 @@ function toggleFavorite(el) {
     const title = el.dataset.title;
     let favs = getFavorites();
     const index = favs.findIndex(j => j.link === link);
+	
 
     if (index >= 0) {
         favs.splice(index, 1);
@@ -204,22 +683,55 @@ function toggleFavorite(el) {
         el.textContent = "★";
     }
     saveFavorites(favs);
-    renderFavorites();
+    renderFavoritesWindow();
 }
-function renderFavorites() {
-    const container = document.getElementById("favoritesList");
+
+function renderFavoritesWindow() {
+    const container = document.getElementById("favoritesListWindow");
+    if (!container) return;
+
     const favs = getFavorites();
     container.innerHTML = "";
+
     favs.forEach(job => {
         const div = document.createElement("div");
         div.className = "favorite-item";
-        div.innerHTML = `<a href="#" onclick="openJobWindow('${job.link}','${job.title}','favorite')">★ ${job.title}</a>`;
+        div.textContent = "★ " + job.title;
+
+        div.draggable = true;
+        div.dataset.title = job.title;
+        div.dataset.link = job.link;
+
+        // Drag behavior
+        div.ondragstart = (e) => {
+            e.dataTransfer.setData("text/plain", JSON.stringify({
+                title: job.title,
+                link: job.link
+            }));
+        };
+
+        // Click to open job
+        div.onclick = () => openJobWindow(job.link, job.title);
+
+        // Remove button
+        const removeBtn = document.createElement("span");
+        removeBtn.className = "favorite-remove";
+        removeBtn.textContent = "✖";
+
+        removeBtn.onclick = (e) => {
+            e.stopPropagation(); // prevent opening job
+            removeFavorite(job.link);
+        };
+
+        div.appendChild(removeBtn);
         container.appendChild(div);
     });
 }
 
+
+
 /* JOB WINDOWS */
-function openJobWindow(link, title, source) {
+function openJobWindow(link, title) {
     const container = document.getElementById("windowContainer");
 
     const win = document.createElement("div");
@@ -236,17 +748,39 @@ function openJobWindow(link, title, source) {
                 <span onclick="this.closest('.job-window').remove()">✖</span>
             </div>
         </div>
-        <div class="job-body">
-            <p><strong>Source:</strong> ${source}</p>
-            <p>This site prevents embedding inside the dashboard.</p>
-            <button class="open-btn" onclick="window.open('${link}', '_blank')">
-                Open Full Job Page
-            </button>
+        <div class="job-body" style="padding:10px; overflow:auto; height:350px;">
+            <p>Loading job details…</p>
         </div>
     `;
 
     container.appendChild(win);
-    makeDraggable(win);
+    const id = "job_" + btoa(link).slice(0, 10);
+	loadWindowState(win, id);
+	makeDraggable(win, id);
+
+
+    // Fetch job details from backend
+    fetch(`/job-details?url=${encodeURIComponent(link)}`)
+        .then(res => res.json())
+        .then(data => {
+            const body = win.querySelector(".job-body");
+
+            if (data.description) {
+                body.innerHTML = `
+                    <pre style="white-space:pre-wrap;">${data.description}</pre>
+                    <hr>
+                    <button class="open-btn" onclick="window.open('${link}', '_blank')">
+                        Open Original Job Page
+                    </button>
+                `;
+            } else {
+                body.innerHTML = `<p>Could not load job details.</p>`;
+            }
+        })
+        .catch(() => {
+            win.querySelector(".job-body").innerHTML =
+                "<p>Error loading job details.</p>";
+        });
 }
 
 function favoriteFromWindow(title, link) {
@@ -264,7 +798,7 @@ function pinWindow(el) {
 }
 
 /* DRAGGING */
-function makeDraggable(win) {
+function makeDraggable(win, id) {
     const header = win.querySelector(".job-header");
     let offsetX = 0, offsetY = 0, isDown = false;
 
@@ -275,6 +809,9 @@ function makeDraggable(win) {
     };
 
     document.onmouseup = function() {
+        if (isDown) {
+            saveWindowState(win, id);
+        }
         isDown = false;
     };
 
@@ -284,12 +821,227 @@ function makeDraggable(win) {
             win.style.top = (e.clientY + offsetY) + "px";
         }
     };
+
+    // Save size changes
+    const resizeObserver = new ResizeObserver(() => {
+        saveWindowState(win, id);
+    });
+    resizeObserver.observe(win);
 }
+
+
+function openNotesWindow() {
+    // Prevent multiple note windows
+    if (document.getElementById("notesWindow")) return;
+
+    const container = document.getElementById("windowContainer");
+
+    const win = document.createElement("div");
+    win.className = "notes-window";
+    win.id = "notesWindow";
+
+    const savedNotes = localStorage.getItem("jobNotes") || "";
+
+    win.innerHTML = `
+        <div class="job-header">
+            <span>Notes</span>
+            <div class="job-controls">
+                <span onclick="this.closest('.notes-window').remove()">✖</span>
+            </div>
+        </div>
+        <div class="notes-body">
+            <textarea id="notesArea" placeholder="Write your notes here...">${savedNotes}</textarea>
+        </div>
+    `;
+
+    container.appendChild(win);
+    loadWindowState(win, "notes");
+	makeDraggable(win, "notes");
+
+
+    const textarea = win.querySelector("#notesArea");
+
+    // Auto-save notes
+    textarea.addEventListener("input", () => {
+        localStorage.setItem("jobNotes", textarea.value);
+    });
+}
+
+function openKanbanWindow() {
+    if (document.getElementById("kanbanWindow")) return;
+
+    const container = document.getElementById("windowContainer");
+
+    const win = document.createElement("div");
+    win.className = "kanban-window";
+    win.id = "kanbanWindow";
+
+    win.innerHTML = `
+        <div class="job-header">
+            <span>Bewerbungsboard</span>
+            <div class="job-controls">
+                <span onclick="this.closest('.kanban-window').remove()">✖</span>
+            </div>
+        </div>
+        <div class="kanban-body">
+            <div class="kanban-column" data-col="Beworben">
+                <h4>Beworben</h4>
+            </div>
+            <div class="kanban-column" data-col="Warten">
+                <h4>Warten</h4>
+            </div>
+            <div class="kanban-column" data-col="Absage">
+                <h4>Absage</h4>
+            </div>
+        </div>
+    `;
+
+    container.appendChild(win);
+    loadWindowState(win, "kanban");
+	makeDraggable(win, "kanban");
+
+    initKanban();
+    loadKanban();
+}
+
+function initKanban() {
+    document.querySelectorAll(".kanban-column").forEach(col => {
+        col.ondragover = e => e.preventDefault();
+
+        col.ondrop = e => {
+            e.preventDefault();
+            const data = JSON.parse(e.dataTransfer.getData("text/plain"));
+            addCardToColumn(data.title, data.link, col.dataset.col);
+            saveKanban();
+        };
+    });
+}
+
+function addCardToColumn(title, link, columnName) {
+    const col = document.querySelector(`.kanban-column[data-col="${columnName}"]`);
+    if (!col) return;
+
+    const card = document.createElement("div");
+    card.className = "kanban-card";
+    card.draggable = true;
+    card.dataset.title = title;
+    card.dataset.link = link;
+
+    card.innerHTML = `
+        ${title}
+        <span class="delete-card" onclick="this.parentElement.remove(); saveKanban();">✖</span>
+    `;
+
+    card.ondragstart = (e) => {
+        e.dataTransfer.setData("text/plain", JSON.stringify({
+            title,
+            link
+        }));
+        card.remove();
+    };
+
+    col.appendChild(card);
+}
+
+function saveKanban() {
+    const data = {};
+    document.querySelectorAll(".kanban-column").forEach(col => {
+        const colName = col.dataset.col;
+        data[colName] = [];
+
+        col.querySelectorAll(".kanban-card").forEach(card => {
+            data[colName].push({
+                title: card.dataset.title,
+                link: card.dataset.link
+            });
+        });
+    });
+
+    localStorage.setItem("kanbanData", JSON.stringify(data));
+}
+
+function loadKanban() {
+    const data = JSON.parse(localStorage.getItem("kanbanData") || "{}");
+
+    for (let colName in data) {
+        data[colName].forEach(job => {
+            addCardToColumn(job.title, job.link, colName);
+        });
+    }
+}
+
+function startInstallBar() {
+    const bar = document.getElementById("installProgress");
+    if (!bar) return;
+
+    const duration = 120000; // 2 minutes in ms
+    let startTime = Date.now();
+
+    setInterval(() => {
+        const elapsed = (Date.now() - startTime) % duration;
+        const percent = (elapsed / duration) * 100;
+        bar.style.width = percent + "%";
+    }, 200);
+}
+
+function openFavoritesWindow() {
+    if (document.getElementById("favoritesWindow")) return;
+
+    const container = document.getElementById("windowContainer");
+
+    const win = document.createElement("div");
+    win.className = "favorites-window";
+    win.id = "favoritesWindow";
+
+    win.innerHTML = `
+        <div class="job-header">
+            <span>Merkliste</span>
+            <div class="job-controls">
+                <span onclick="this.closest('.favorites-window').remove()">✖</span>
+            </div>
+        </div>
+        <div class="favorites-body" id="favoritesListWindow"></div>
+    `;
+
+    container.appendChild(win);
+    loadWindowState(win, "favorites");
+	makeDraggable(win, "favorites")
+    renderFavoritesWindow();
+}
+
+setInterval(() => {
+    saveWorkspace();
+}, 10000);
+
 
 /* INIT */
 window.onload = function() {
-    renderFavorites();
+    startInstallBar();
+	restoreWorkspace();
+
+    // Restore main windows if they were open
+    if (localStorage.getItem("window_favorites"))
+        openFavoritesWindow();
+
+    if (localStorage.getItem("window_notes"))
+        openNotesWindow();
+
+    if (localStorage.getItem("window_kanban"))
+        openKanbanWindow();
+		
+	if (localStorage.getItem("window_results"))
+    openResultsWindow();
 };
+
+function removeFavorite(link) {
+    let favs = getFavorites();
+    favs = favs.filter(j => j.link !== link);
+    saveFavorites(favs);
+    renderFavoritesWindow();
+}
+
+
+
 </script>
 
 </body>

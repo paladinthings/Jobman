@@ -1,0 +1,5 @@
+jobs.ch|ICT|Bern
+indeed.ch|ICT|Bern
+jobscout24.ch|ICT|Bern
+ch.indeed.com|ICT|Bern
+jobagent.ch|ICT|Bern
