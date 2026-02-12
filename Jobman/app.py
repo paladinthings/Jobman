@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request
 import pandas as pd
 import os
+import requests
+from bs4 import BeautifulSoup
+from flask import Response
 
 app = Flask(__name__)
 
@@ -38,6 +41,60 @@ def index():
 
     return render_template("index.html", jobs=jobs)
 
+@app.route("/proxy")
+def proxy():
+    url = request.args.get("url")
+    if not url:
+        return "No URL provided", 400
+
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
+        r = requests.get(url, headers=headers, timeout=15)
+
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        # Basic content extraction
+        # Try common job description containers
+        selectors = [
+            "#jobDescriptionText",
+            ".job-description",
+            ".jobad-description",
+            "article",
+            "main"
+        ]
+
+        content = None
+        for sel in selectors:
+            content = soup.select_one(sel)
+            if content:
+                break
+
+        if not content:
+            content = soup.body
+
+        html = f"""
+        <html>
+        <head>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    padding: 20px;
+                    line-height: 1.5;
+                }}
+            </style>
+        </head>
+        <body>
+            {content}
+        </body>
+        </html>
+        """
+
+        return Response(html, content_type="text/html")
+
+    except Exception as e:
+        return f"Proxy error: {e}", 500
 
 if __name__ == "__main__":
     app.run(debug=True)

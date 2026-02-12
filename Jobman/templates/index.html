@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Job Dashboard</title>
+    <style>
+        :root {
+            --bg: #f5f5f5;
+            --text: #000;
+            --panel: white;
+        }
+
+        body.dark {
+            --bg: #121212;
+            --text: #e0e0e0;
+            --panel: #1e1e1e;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .favorites-panel {
+            background: var(--panel);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .favorite-item {
+            margin: 5px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--panel);
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #8883;
+        }
+
+        th {
+            background: #333;
+            color: white;
+        }
+
+        .star {
+            cursor: pointer;
+        }
+
+        .star.favorited {
+            color: gold;
+        }
+
+        .toggle {
+            padding: 6px 12px;
+            background: #666;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Floating window */
+        .job-window {
+            position: fixed;
+            width: 420px;
+            background: var(--panel);
+            border: 2px solid #555;
+            top: 120px;
+            left: 120px;
+            resize: both;
+            overflow: hidden;
+            z-index: 1000;
+        }
+
+        .job-header {
+            background: #444;
+            color: white;
+            padding: 6px;
+            cursor: move;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .job-controls span {
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        .job-body {
+            padding: 15px;
+        }
+
+        .open-btn {
+            padding: 8px 12px;
+            background: #4da3ff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <h1>Job Dashboard</h1>
+    <button class="toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
+</div>
+
+<div class="favorites-panel">
+    <h3>⭐ Favorites</h3>
+    <div id="favoritesList"></div>
+</div>
+
+<form method="get">
+    <input type="text" name="keyword" placeholder="Keyword">
+    <input type="text" name="location" placeholder="Location">
+    <select name="source">
+        <option value="">All Sources</option>
+        <option value="jobs.ch">jobs.ch</option>
+        <option value="indeed.ch">indeed.ch</option>
+        <option value="jobscout24.ch">jobscout24.ch</option>
+    </select>
+    <button type="submit">Filter</button>
+</form>
+
+<table>
+    <tr>
+        <th>★</th>
+        <th>Title</th>
+        <th>Company</th>
+        <th>Location</th>
+        <th>Source</th>
+        <th>View</th>
+    </tr>
+    {% for job in jobs %}
+    <tr>
+        <td>
+            <span class="star"
+                  data-link="{{ job.link }}"
+                  data-title="{{ job.title }}"
+                  onclick="toggleFavorite(this)">☆</span>
+        </td>
+        <td>{{ job.title }}</td>
+        <td>{{ job.company }}</td>
+        <td>{{ job.location }}</td>
+        <td>{{ job.source }}</td>
+        <td>
+            <button onclick="openJobWindow('{{ job.link }}','{{ job.title }}','{{ job.source }}')">
+                View
+            </button>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<div id="windowContainer"></div>
+
+<script>
+/* THEME */
+function toggleTheme() {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("theme",
+        document.body.classList.contains("dark") ? "dark" : "light");
+}
+if (localStorage.getItem("theme") === "dark") {
+    document.body.classList.add("dark");
+}
+
+/* FAVORITES */
+function getFavorites() {
+    return JSON.parse(localStorage.getItem("favorites") || "[]");
+}
+function saveFavorites(favs) {
+    localStorage.setItem("favorites", JSON.stringify(favs));
+}
+function toggleFavorite(el) {
+    const link = el.dataset.link;
+    const title = el.dataset.title;
+    let favs = getFavorites();
+    const index = favs.findIndex(j => j.link === link);
+
+    if (index >= 0) {
+        favs.splice(index, 1);
+        el.classList.remove("favorited");
+        el.textContent = "☆";
+    } else {
+        favs.push({ title, link });
+        el.classList.add("favorited");
+        el.textContent = "★";
+    }
+    saveFavorites(favs);
+    renderFavorites();
+}
+function renderFavorites() {
+    const container = document.getElementById("favoritesList");
+    const favs = getFavorites();
+    container.innerHTML = "";
+    favs.forEach(job => {
+        const div = document.createElement("div");
+        div.className = "favorite-item";
+        div.innerHTML = `<a href="#" onclick="openJobWindow('${job.link}','${job.title}','favorite')">★ ${job.title}</a>`;
+        container.appendChild(div);
+    });
+}
+
+/* JOB WINDOWS */
+function openJobWindow(link, title, source) {
+    const container = document.getElementById("windowContainer");
+
+    const win = document.createElement("div");
+    win.className = "job-window";
+    win.style.top = (100 + Math.random() * 100) + "px";
+    win.style.left = (100 + Math.random() * 100) + "px";
+
+    win.innerHTML = `
+        <div class="job-header">
+            <span>${title}</span>
+            <div class="job-controls">
+                <span onclick="favoriteFromWindow('${title}','${link}')">⭐</span>
+                <span onclick="pinWindow(this)">📌</span>
+                <span onclick="this.closest('.job-window').remove()">✖</span>
+            </div>
+        </div>
+        <div class="job-body">
+            <p><strong>Source:</strong> ${source}</p>
+            <p>This site prevents embedding inside the dashboard.</p>
+            <button class="open-btn" onclick="window.open('${link}', '_blank')">
+                Open Full Job Page
+            </button>
+        </div>
+    `;
+
+    container.appendChild(win);
+    makeDraggable(win);
+}
+
+function favoriteFromWindow(title, link) {
+    let favs = getFavorites();
+    if (!favs.some(j => j.link === link)) {
+        favs.push({ title, link });
+        saveFavorites(favs);
+        renderFavorites();
+    }
+}
+
+function pinWindow(el) {
+    const win = el.closest(".job-window");
+    win.style.zIndex = 2000;
+}
+
+/* DRAGGING */
+function makeDraggable(win) {
+    const header = win.querySelector(".job-header");
+    let offsetX = 0, offsetY = 0, isDown = false;
+
+    header.onmousedown = function(e) {
+        isDown = true;
+        offsetX = win.offsetLeft - e.clientX;
+        offsetY = win.offsetTop - e.clientY;
+    };
+
+    document.onmouseup = function() {
+        isDown = false;
+    };
+
+    document.onmousemove = function(e) {
+        if (isDown) {
+            win.style.left = (e.clientX + offsetX) + "px";
+            win.style.top = (e.clientY + offsetY) + "px";
+        }
+    };
+}
+
+/* INIT */
+window.onload = function() {
+    renderFavorites();
+};
+</script>
+
+</body>
+</html>
