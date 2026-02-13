@@ -238,7 +238,7 @@
 .kanban-card {
     background: var(--panel);
     border: 1px solid #666;
-    padding: 6px;
+    padding: 6px 26px 6px 6px;
     margin: 6px 0;
     cursor: grab;
     font-size: 0.9em;
@@ -247,11 +247,13 @@
 
 .delete-card {
     position: absolute;
-    right: 5px;
-    top: 2px;
+    right: 6px;
+    top: 3px;
     cursor: pointer;
     font-size: 12px;
+    color: #c44;
 }
+
 
 .title-area {
     display: flex;
@@ -440,6 +442,107 @@
     cursor: pointer;
 }
 
+.task-window {
+    position: fixed;
+    width: 450px;
+    height: 300px;
+    background: var(--panel);
+    border: 2px solid #555;
+    top: 200px;
+    left: 260px;
+    resize: both;
+    overflow: hidden;
+    z-index: 1750;
+    display: flex;
+    flex-direction: column;
+}
+
+.task-body {
+    flex: 1;
+    overflow: auto;
+    padding: 8px;
+}
+
+.task-body table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.task-body th,
+.task-body td {
+    padding: 6px;
+    border-bottom: 1px solid #8883;
+}
+
+.task-new-window {
+    position: fixed;
+    width: 300px;
+    background: var(--panel);
+    border: 2px solid #555;
+    top: 250px;
+    left: 320px;
+    z-index: 1800;
+    padding: 10px;
+}
+
+.task-new-window input,
+.task-new-window button {
+    width: 100%;
+    margin-top: 6px;
+    padding: 6px;
+}
+
+.task-detail-window {
+    position: fixed;
+    width: 400px;
+    height: 300px;
+    background: var(--panel);
+    border: 2px solid #555;
+    top: 240px;
+    left: 340px;
+    resize: both;
+    overflow: hidden;
+    z-index: 1850;
+    display: flex;
+    flex-direction: column;
+}
+
+.task-detail-body {
+    flex: 1;
+    padding: 10px;
+}
+
+.task-detail-body textarea,
+.task-detail-body input {
+    width: 100%;
+    margin-top: 6px;
+    padding: 6px;
+}
+
+.install-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.install-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.install-btn {
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border: 1px solid #8885;
+    border-radius: 4px;
+    background: var(--panel);
+    color: var(--text);
+}
+
+.install-btn:hover {
+    background: #8882;
+}
 
 
     </style>
@@ -449,10 +552,17 @@
 <div class="top-bar">
     <!-- Left: title + install bar -->
     <div class="title-area">
+    <div class="install-row">
         <div class="install-bar">
             <div id="installProgress" class="install-progress"></div>
         </div>
+        <div class="install-controls">
+            <span class="install-btn" onclick="manualSaveWorkspace()" title="Save layout">💾</span>
+            <span class="install-btn" onclick="closeAllWindows()" title="Close all windows">●</span>
+        </div>
     </div>
+</div>
+
 
     <!-- Center: search bar -->
     <form method="get" class="search-form">
@@ -474,6 +584,7 @@
     <button class="toggle" onclick="openKanbanWindow()">Kanban</button>
     <button class="toggle" onclick="openNotesWindow()">Notes</button>
     <button class="toggle" onclick="openChatWindow()">Chat</button>
+	<button class="toggle" onclick="openTaskBoard()">Tasks</button>
     <button class="toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
 </div>
 
@@ -525,6 +636,86 @@
 <div id="windowContainer"></div>
 
 <script>
+
+function manualSaveWorkspace() {
+    saveWorkspace();
+}
+
+function closeAllWindows() {
+    const container = document.getElementById("windowContainer");
+    container.innerHTML = "";
+
+    // Save blank workspace
+    localStorage.setItem("workspaceState", JSON.stringify([]));
+}
+
+
+function openTaskDetail(index) {
+    const tasks = getTasks();
+    const task = tasks[index];
+    if (!task) return;
+
+    const container = document.getElementById("windowContainer");
+
+    const win = document.createElement("div");
+    win.className = "task-detail-window";
+
+    win.innerHTML = `
+        <div class="job-header">
+            <span>Task</span>
+            <div class="job-controls">
+                <span onclick="this.closest('.task-detail-window').remove()">✖</span>
+            </div>
+        </div>
+        <div class="task-detail-body">
+            <label>Title</label>
+            <input type="text" id="detailTitle" value="${task.title}">
+
+            <label>Due date</label>
+            <input type="date" id="detailDue" value="${task.due || ""}">
+
+            <label>Details</label>
+            <textarea id="detailText">${task.details || ""}</textarea>
+
+            <button onclick="saveTaskDetail(${index}, this)">
+                Save
+            </button>
+        </div>
+    `;
+
+    container.appendChild(win);
+    makeDraggable(win, "taskDetail_" + index);
+}
+
+function saveTaskDetail(index, btn) {
+    const win = btn.closest(".task-detail-window");
+
+    const title = win.querySelector("#detailTitle").value.trim();
+    const due = win.querySelector("#detailDue").value;
+    const details = win.querySelector("#detailText").value.trim();
+
+    const tasks = getTasks();
+    if (!tasks[index]) return;
+
+    tasks[index] = {
+        title,
+        due,
+        details
+    };
+
+    saveTasks(tasks);
+    renderTasks();
+}
+
+
+function getTasks() {
+    return JSON.parse(localStorage.getItem("taskList") || "[]");
+}
+
+function saveTasks(tasks) {
+    localStorage.setItem("taskList", JSON.stringify(tasks));
+}
+
 
 function openChatWindow() {
     if (document.getElementById("chatWindow")) return;
@@ -1045,11 +1236,20 @@ function initKanban() {
         col.ondrop = e => {
             e.preventDefault();
             const data = JSON.parse(e.dataTransfer.getData("text/plain"));
+
+            // Remove existing card with same link
+            document.querySelectorAll(".kanban-card").forEach(card => {
+                if (card.dataset.link === data.link) {
+                    card.remove();
+                }
+            });
+
             addCardToColumn(data.title, data.link, col.dataset.col);
             saveKanban();
         };
     });
 }
+
 
 function addCardToColumn(title, link, columnName) {
     const col = document.querySelector(`.kanban-column[data-col="${columnName}"]`);
@@ -1063,19 +1263,28 @@ function addCardToColumn(title, link, columnName) {
 
     card.innerHTML = `
         ${title}
-        <span class="delete-card" onclick="this.parentElement.remove(); saveKanban();">✖</span>
+        <span class="delete-card">✖</span>
     `;
 
+    // Delete button
+    const removeBtn = card.querySelector(".delete-card");
+    removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        card.remove();
+        saveKanban();
+    };
+
+    // Drag behavior
     card.ondragstart = (e) => {
         e.dataTransfer.setData("text/plain", JSON.stringify({
-            title,
-            link
+            title: card.dataset.title,
+            link: card.dataset.link
         }));
-        card.remove();
     };
 
     col.appendChild(card);
 }
+
 
 function saveKanban() {
     const data = {};
@@ -1179,6 +1388,130 @@ function removeFavorite(link) {
     favs = favs.filter(j => j.link !== link);
     saveFavorites(favs);
     renderFavoritesWindow();
+}
+
+function openTaskBoard() {
+    if (document.getElementById("taskWindow")) return;
+
+    const container = document.getElementById("windowContainer");
+
+    const win = document.createElement("div");
+    win.className = "task-window";
+    win.id = "taskWindow";
+
+    win.innerHTML = `
+        <div class="job-header">
+            <span>Task Board</span>
+            <div class="job-controls">
+                <button onclick="openNewTaskWindow()">＋</button>
+                <span onclick="this.closest('.task-window').remove()">✖</span>
+            </div>
+        </div>
+        <div class="task-body" id="taskBody"></div>
+    `;
+
+    container.appendChild(win);
+
+    loadWindowState(win, "tasks");
+    makeDraggable(win, "tasks");
+
+    renderTasks();
+}
+
+function renderTasks() {
+    const container = document.getElementById("taskBody");
+    if (!container) return;
+
+    const tasks = getTasks();
+
+    let html = `
+        <table>
+            <tr>
+                <th>Task</th>
+                <th>Due</th>
+                <th></th>
+            </tr>
+    `;
+
+    tasks.forEach((task, index) => {
+        html += `
+            <tr>
+                <td onclick="openTaskDetail(${index})" style="cursor:pointer;">
+                    ${task.title}
+                </td>
+                <td>${task.due || ""}</td>
+                <td>
+                    <button onclick="deleteTask(${index})">✖</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += "</table>";
+    container.innerHTML = html;
+}
+
+
+function deleteTask(index) {
+    let tasks = getTasks();
+    tasks.splice(index, 1);
+    saveTasks(tasks);
+    renderTasks();
+}
+
+function openNewTaskWindow() {
+    if (document.getElementById("taskNewWindow")) return;
+
+    const container = document.getElementById("windowContainer");
+
+    const win = document.createElement("div");
+    win.className = "task-new-window";
+    win.id = "taskNewWindow";
+
+    win.innerHTML = `
+    <div class="job-header">
+        <span>New Task</span>
+        <div class="job-controls">
+            <span onclick="this.closest('.task-new-window').remove()">✖</span>
+        </div>
+    </div>
+
+    <label>Task title</label>
+    <input type="text" id="taskText" placeholder="Short task title">
+
+    <label>Due date</label>
+    <input type="date" id="taskDue">
+
+    <label>Details</label>
+    <textarea id="taskDetails" placeholder="Detailed description..."
+        style="width:100%; height:80px; margin-top:6px;"></textarea>
+
+    <button onclick="addTask()">Create Task</button>
+`;
+
+
+    container.appendChild(win);
+    makeDraggable(win, "taskNew");
+}
+
+function addTask() {
+    const text = document.getElementById("taskText").value.trim();
+    const due = document.getElementById("taskDue").value;
+    const details = document.getElementById("taskDetails").value.trim();
+
+    if (!text) return;
+
+    const tasks = getTasks();
+    tasks.push({
+        title: text,
+        due: due,
+        details: details
+    });
+
+    saveTasks(tasks);
+    renderTasks();
+
+    document.getElementById("taskNewWindow").remove();
 }
 
 
