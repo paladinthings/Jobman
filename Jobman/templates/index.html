@@ -926,27 +926,34 @@ function pinWindow(el) {
 /* DRAGGING */
 function makeDraggable(win, id) {
     const header = win.querySelector(".job-header");
-    let offsetX = 0, offsetY = 0, isDown = false;
+    let offsetX = 0;
+    let offsetY = 0;
+    let isDown = false;
 
-    header.onmousedown = function(e) {
-        isDown = true;
-        offsetX = win.offsetLeft - e.clientX;
-        offsetY = win.offsetTop - e.clientY;
-    };
+    function onMouseMove(e) {
+        if (!isDown) return;
 
-    document.onmouseup = function() {
+        win.style.left = (e.clientX + offsetX) + "px";
+        win.style.top = (e.clientY + offsetY) + "px";
+    }
+
+    function onMouseUp() {
         if (isDown) {
             saveWindowState(win, id);
         }
         isDown = false;
-    };
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+    }
 
-    document.onmousemove = function(e) {
-        if (isDown) {
-            win.style.left = (e.clientX + offsetX) + "px";
-            win.style.top = (e.clientY + offsetY) + "px";
-        }
-    };
+    header.addEventListener("mousedown", function(e) {
+        isDown = true;
+        offsetX = win.offsetLeft - e.clientX;
+        offsetY = win.offsetTop - e.clientY;
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+    });
 
     // Save size changes
     const resizeObserver = new ResizeObserver(() => {
@@ -954,6 +961,7 @@ function makeDraggable(win, id) {
     });
     resizeObserver.observe(win);
 }
+
 
 
 function openNotesWindow() {
