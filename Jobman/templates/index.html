@@ -544,6 +544,21 @@
     background: #8882;
 }
 
+.job-counter {
+    margin-left: 8px;
+    padding: 2px 8px;
+    border: 1px solid #8885;
+    border-radius: 4px;
+    font-size: 0.9em;
+    background: var(--panel);
+    color: var(--text);
+}
+
+.task-done td {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
 
     </style>
 </head>
@@ -557,9 +572,11 @@
             <div id="installProgress" class="install-progress"></div>
         </div>
         <div class="install-controls">
-            <span class="install-btn" onclick="manualSaveWorkspace()" title="Save layout">💾</span>
-            <span class="install-btn" onclick="closeAllWindows()" title="Close all windows">●</span>
-        </div>
+    <span class="install-btn" onclick="manualSaveWorkspace()" title="Save layout">💾</span>
+    <span class="install-btn" onclick="closeAllWindows()" title="Close all windows">●</span>
+    <span id="jobCounter" class="job-counter">0 jobs</span>
+</div>
+
     </div>
 </div>
 
@@ -636,6 +653,29 @@
 <div id="windowContainer"></div>
 
 <script>
+
+function completeTask(index) {
+    const tasks = getTasks();
+    if (!tasks[index]) return;
+
+    tasks[index].done = !tasks[index].done;
+    saveTasks(tasks);
+    renderTasks();
+}
+
+
+function updateJobCounter(total, visible) {
+    const el = document.getElementById("jobCounter");
+    if (!el) return;
+
+    if (visible === undefined) {
+        el.textContent = total + " jobs";
+    } else {
+        el.textContent = total + " total | " + visible + " visible";
+    }
+}
+
+
 
 function manualSaveWorkspace() {
     saveWorkspace();
@@ -1362,6 +1402,8 @@ setInterval(() => {
 window.onload = function() {
     startInstallBar();
 	restoreWorkspace();
+	updateJobCounter(window.totalJobs || 0, window.initialVisibleJobs || 0);
+
 
     // Restore main windows if they were open
     if (localStorage.getItem("window_favorites"))
@@ -1389,6 +1431,11 @@ function removeFavorite(link) {
     saveFavorites(favs);
     renderFavoritesWindow();
 }
+
+window.initialVisibleJobs = {{ jobs|length }};
+window.totalJobs = {{ total_jobs }};
+
+
 
 function openTaskBoard() {
     if (document.getElementById("taskWindow")) return;
@@ -1434,13 +1481,16 @@ function renderTasks() {
     `;
 
     tasks.forEach((task, index) => {
+        const doneClass = task.done ? "task-done" : "";
+
         html += `
-            <tr>
+            <tr class="${doneClass}">
                 <td onclick="openTaskDetail(${index})" style="cursor:pointer;">
                     ${task.title}
                 </td>
                 <td>${task.due || ""}</td>
                 <td>
+                    <button onclick="completeTask(${index})">✔</button>
                     <button onclick="deleteTask(${index})">✖</button>
                 </td>
             </tr>
@@ -1450,6 +1500,7 @@ function renderTasks() {
     html += "</table>";
     container.innerHTML = html;
 }
+
 
 
 function deleteTask(index) {
@@ -1505,7 +1556,8 @@ function addTask() {
     tasks.push({
         title: text,
         due: due,
-        details: details
+        details: details,
+        done: false
     });
 
     saveTasks(tasks);
@@ -1513,6 +1565,7 @@ function addTask() {
 
     document.getElementById("taskNewWindow").remove();
 }
+
 
 
 

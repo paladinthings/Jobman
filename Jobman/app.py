@@ -35,8 +35,11 @@ def index():
     if source:
         df = df[df["source"].str.lower().str.contains(source, na=False)]
 
+    total_jobs = len(df)
+
     jobs = df.sort_values(by="scraped_at", ascending=False).to_dict(orient="records")
-    return render_template("index.html", jobs=jobs)
+    return render_template("index.html", jobs=jobs, total_jobs=total_jobs)
+
 
 
 # ==============================
