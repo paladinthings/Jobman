@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 import sqlite3
 import pandas as pd
 import os
@@ -14,13 +14,6 @@ app.secret_key = "change-this-to-a-random-secret"
 
 DB_FILE = "jobs.db"
 
-def get_db():
-    return sqlite3.connect(DB_FILE)
-
-def current_user_role():
-    return session.get("role", "user")
-    
-
 def role_required(role):
     def decorator(func):
         @wraps(func)
@@ -34,6 +27,75 @@ def role_required(role):
             return func(*args, **kwargs)
         return wrapper
     return decorator
+
+def get_db():
+    return sqlite3.connect(DB_FILE)
+
+def current_user_role():
+    return session.get("role", "user")
+  
+@app.route("/api/admin/user/reset-password", methods=["POST"])
+@role_required("admin")
+def api_admin_reset_password():
+    data = request.json
+    user_id = data.get("id")
+    new_password = data.get("password")
+
+    if not user_id or not new_password:
+        return jsonify({"status": "error"}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE users
+        SET password_hash = ?
+        WHERE id = ?
+    """, (
+        generate_password_hash(new_password),
+        user_id
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
+  
+@app.route("/api/admin/user/create", methods=["POST"])
+@role_required("admin")
+def api_admin_create_user():
+    data = request.json
+    username = data.get("username")
+    password = data.get("password")
+    role = data.get("role", "user")
+
+    if not username or not password:
+        return jsonify({"status": "error", "message": "Missing fields"}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            INSERT INTO users (username, password_hash, role, created_at)
+            VALUES (?, ?, ?, ?)
+        """, (
+            username,
+            generate_password_hash(password),
+            role,
+            datetime.now().isoformat()
+        ))
+
+        conn.commit()
+    except Exception as e:
+        conn.close()
+        return jsonify({"status": "error", "message": "User exists"}), 400
+
+    conn.close()
+    return jsonify({"status": "ok"})
+  
+
   
 
 def load_jobs():
@@ -513,6 +575,81 @@ def job_details():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route("/api/admin/users", methods=["GET"])
+@role_required("admin")
+def api_admin_get_users():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, username, role
+        FROM users
+        ORDER BY id ASC
+    """)
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    users = []
+    for r in rows:
+        users.append({
+            "id": r[0],
+            "username": r[1],
+            "role": r[2]
+        })
+
+    return jsonify(users)
+
+@app.route("/api/admin/user/role", methods=["POST"])
+@role_required("admin")
+def api_admin_change_role():
+    data = request.json
+    user_id = data.get("id")
+    new_role = data.get("role")
+
+    if not user_id or not new_role:
+        return jsonify({"status": "error"}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE users
+        SET role = ?
+        WHERE id = ?
+    """, (new_role, user_id))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
+@app.route("/api/admin/user/delete", methods=["POST"])
+@role_required("admin")
+def api_admin_delete_user():
+    data = request.json
+    user_id = data.get("id")
+
+    if not user_id:
+        return jsonify({"status": "error"}), 400
+
+    # Prevent deleting yourself
+    if int(user_id) == session["user_id"]:
+        return jsonify({"status": "error", "message": "Cannot delete yourself"}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM users
+        WHERE id = ?
+    """, (user_id,))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
 
 
 if __name__ == "__main__":

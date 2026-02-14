@@ -618,15 +618,21 @@
     </form>
 
     <!-- Right: buttons -->
-    <<div class="top-buttons">
+<div class="top-buttons">
     <button class="toggle" onclick="openResultsWindow()">Results</button>
     <button class="toggle" onclick="openFavoritesWindow()">Favorites</button>
     <button class="toggle" onclick="openKanbanWindow()">Kanban</button>
     <button class="toggle" onclick="openNotesWindow()">Notes</button>
     <button class="toggle" onclick="openChatWindow()">Chat</button>
-	<button class="toggle" onclick="openTaskBoard()">Tasks</button>
+    <button class="toggle" onclick="openTaskBoard()">Tasks</button>
+
+    {% if session.role == "admin" %}
+    <button class="toggle" onclick="openAdminWindow()">Admin</button>
+    {% endif %}
+
     <button class="toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
 </div>
+
 
 
 </div>
@@ -674,6 +680,44 @@
 
 
 <div id="windowContainer"></div>
+<div id="adminWindow" class="job-window" style="display:none; width:420px; height:300px;">
+    <div class="job-header">
+        <span>Admin Panel</span>
+        <div class="job-controls">
+            <span onclick="this.closest('#adminWindow').style.display='none'">✖</span>
+        </div>
+    </div>
+    <div class="job-body">
+
+    <!-- Create user section -->
+    <div style="margin-bottom:10px;">
+        <input id="newUsername" placeholder="Username">
+        <input id="newPassword" type="password" placeholder="Password">
+        <select id="newUserRole">
+            <option value="user">user</option>
+            <option value="moderator">moderator</option>
+            <option value="admin">admin</option>
+        </select>
+        <button onclick="createUser()">Create</button>
+    </div>
+
+    <!-- User table -->
+    <table id="adminUserTable" style="width:100%;">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Reset</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+</div>
+
+</div>
+
 
 <script>
 
@@ -824,7 +868,7 @@ function loadChatMessages() {
 
             log.forEach(msg => {
                 const div = document.createElement("div");
-                div.textContent = `[${msg.time}] ${msg.text}`;
+                div.textContent = `[${msg.time}] ${msg.username}: ${msg.message}`;
                 container.appendChild(div);
             });
 
@@ -843,7 +887,7 @@ function sendChatMessage() {
     fetch("/api/chat/send", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({text})
+        body: JSON.stringify({message: text})
     }).then(() => {
         input.value = "";
         loadChatMessages();
@@ -1458,6 +1502,132 @@ setInterval(() => {
     saveWorkspace();
 	loadChatMessages();
 }, 10000);
+
+function openAdminWindow() {
+    const win = document.getElementById("adminWindow");
+    win.style.display = "block";
+
+    // Make draggable (only once)
+    if (!win.dataset.dragInit) {
+        makeDraggable(win, "admin");
+        win.dataset.dragInit = "true";
+    }
+
+    renderAdminUsers();
+}
+
+
+function renderAdminUsers() {
+    fetch("/api/admin/users")
+        .then(res => res.json())
+        .then(users => {
+            const tbody = document.querySelector("#adminUserTable tbody");
+            tbody.innerHTML = "";
+
+            users.forEach(user => {
+                const tr = document.createElement("tr");
+
+                // Username
+                const tdUser = document.createElement("td");
+                tdUser.textContent = user.username;
+
+                // Role dropdown
+                const tdRole = document.createElement("td");
+                const select = document.createElement("select");
+
+                ["user", "moderator", "admin"].forEach(role => {
+                    const opt = document.createElement("option");
+                    opt.value = role;
+                    opt.textContent = role;
+                    if (role === user.role) opt.selected = true;
+                    select.appendChild(opt);
+                });
+
+                select.onchange = () => {
+                    fetch("/api/admin/user/role", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({
+                            id: user.id,
+                            role: select.value
+                        })
+                    });
+                };
+
+                tdRole.appendChild(select);
+
+                // Reset password button
+                const tdReset = document.createElement("td");
+                const resetBtn = document.createElement("button");
+                resetBtn.textContent = "Reset";
+
+                resetBtn.onclick = () => {
+                    const newPass = prompt("Enter new password:");
+                    if (!newPass) return;
+
+                    fetch("/api/admin/user/reset-password", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({
+                            id: user.id,
+                            password: newPass
+                        })
+                    });
+                };
+
+                tdReset.appendChild(resetBtn);
+
+                // Delete button
+                const tdDelete = document.createElement("td");
+                const delBtn = document.createElement("button");
+                delBtn.textContent = "X";
+
+                delBtn.onclick = () => {
+                    fetch("/api/admin/user/delete", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({id: user.id})
+                    }).then(() => renderAdminUsers());
+                };
+
+                tdDelete.appendChild(delBtn);
+
+                tr.appendChild(tdUser);
+                tr.appendChild(tdRole);
+                tr.appendChild(tdReset);
+                tr.appendChild(tdDelete);
+
+                tbody.appendChild(tr);
+            });
+        });
+}
+
+function createUser() {
+    const username = document.getElementById("newUsername").value;
+    const password = document.getElementById("newPassword").value;
+    const role = document.getElementById("newUserRole").value;
+
+    if (!username || !password) {
+        alert("Enter username and password");
+        return;
+    }
+
+    fetch("/api/admin/user/create", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({username, password, role})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "ok") {
+            renderAdminUsers();
+            document.getElementById("newUsername").value = "";
+            document.getElementById("newPassword").value = "";
+        } else {
+            alert("User creation failed");
+        }
+    });
+}
 
 
 /* INIT */
