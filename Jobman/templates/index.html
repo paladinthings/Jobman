@@ -1225,7 +1225,6 @@ function makeDraggable(win, id) {
 
 
 function openNotesWindow() {
-    // Prevent multiple note windows
     if (document.getElementById("notesWindow")) return;
 
     const container = document.getElementById("windowContainer");
@@ -1233,8 +1232,6 @@ function openNotesWindow() {
     const win = document.createElement("div");
     win.className = "notes-window";
     win.id = "notesWindow";
-
-    const savedNotes = localStorage.getItem("jobNotes") || "";
 
     win.innerHTML = `
         <div class="job-header">
@@ -1244,22 +1241,33 @@ function openNotesWindow() {
             </div>
         </div>
         <div class="notes-body">
-            <textarea id="notesArea" placeholder="Write your notes here...">${savedNotes}</textarea>
+            <textarea id="notesArea" placeholder="Write your notes here..."></textarea>
         </div>
     `;
 
     container.appendChild(win);
     loadWindowState(win, "notes");
-	makeDraggable(win, "notes");
-
+    makeDraggable(win, "notes");
 
     const textarea = win.querySelector("#notesArea");
 
-    // Auto-save notes
+    // Load notes from DB
+    fetch("/api/notes")
+        .then(res => res.json())
+        .then(data => {
+            textarea.value = data.content || "";
+        });
+
+    // Auto-save to DB
     textarea.addEventListener("input", () => {
-        localStorage.setItem("jobNotes", textarea.value);
+        fetch("/api/notes/save", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({content: textarea.value})
+        });
     });
 }
+
 
 function openKanbanWindow() {
     if (document.getElementById("kanbanWindow")) return;
@@ -1438,8 +1446,6 @@ window.onload = function() {
     if (localStorage.getItem("window_favorites"))
         openFavoritesWindow();
 
-    if (localStorage.getItem("window_notes"))
-        openNotesWindow();
 
     if (localStorage.getItem("window_kanban"))
         openKanbanWindow();

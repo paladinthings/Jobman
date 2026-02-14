@@ -39,6 +39,15 @@ def init_db():
         created_at TEXT
     )
     """)
+    
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS notes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        content TEXT,
+        updated_at TEXT
+    )
+    """)
+
 
 
     

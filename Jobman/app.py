@@ -182,6 +182,42 @@ def api_toggle_task():
 
     return jsonify({"status": "ok"})
 
+@app.route("/api/notes", methods=["GET"])
+def api_get_notes():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT content FROM notes ORDER BY id DESC LIMIT 1")
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        return jsonify({"content": row[0]})
+    else:
+        return jsonify({"content": ""})
+
+@app.route("/api/notes/save", methods=["POST"])
+def api_save_notes():
+    data = request.json
+    content = data.get("content", "")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Clear old note
+    cursor.execute("DELETE FROM notes")
+
+    # Insert new note
+    cursor.execute("""
+        INSERT INTO notes (content, updated_at)
+        VALUES (?, ?)
+    """, (content, datetime.now().isoformat()))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
 
 # ==============================
 # FETCH JOB DETAILS LIVE
