@@ -858,6 +858,22 @@ function rebindResultsInteractions(container) {
     });
 }
 
+async function updateStarStates(container) {
+    const favs = await getFavorites();
+    const favLinks = new Set(favs.map(f => f.link));
+
+    container.querySelectorAll(".star").forEach(star => {
+        const link = star.dataset.link;
+        if (favLinks.has(link)) {
+            star.classList.add("favorited");
+            star.textContent = "★";
+        } else {
+            star.classList.remove("favorited");
+            star.textContent = "☆";
+        }
+    });
+}
+
 
 function saveWorkspace() {
     const windows = document.querySelectorAll("#windowContainer > div");
@@ -981,6 +997,8 @@ function openResultsWindow() {
 
     // Re-bind buttons and stars
     rebindResultsInteractions(body);
+	updateStarStates(body);
+
 }
 
 
@@ -1017,37 +1035,46 @@ if (localStorage.getItem("theme") === "dark") {
 }
 
 /* FAVORITES */
-function getFavorites() {
-    return JSON.parse(localStorage.getItem("favorites") || "[]");
+
+async function getFavorites() {
+    const res = await fetch("/api/favorites");
+    return await res.json();
 }
-function saveFavorites(favs) {
-    localStorage.setItem("favorites", JSON.stringify(favs));
-}
+
+
 function toggleFavorite(el) {
     const link = el.dataset.link;
     const title = el.dataset.title;
-    let favs = getFavorites();
-    const index = favs.findIndex(j => j.link === link);
-	
 
-    if (index >= 0) {
-        favs.splice(index, 1);
-        el.classList.remove("favorited");
-        el.textContent = "☆";
-    } else {
-        favs.push({ title, link });
-        el.classList.add("favorited");
-        el.textContent = "★";
-    }
-    saveFavorites(favs);
-    renderFavoritesWindow();
+    const isFavorited = el.classList.contains("favorited");
+
+    const url = isFavorited
+        ? "/api/favorites/remove"
+        : "/api/favorites/add";
+
+    fetch(url, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({link, title})
+    }).then(() => {
+        // Toggle star appearance
+        el.classList.toggle("favorited");
+        el.textContent = el.classList.contains("favorited") ? "★" : "☆";
+
+        // Only refresh if favorites window exists
+        if (document.getElementById("favoritesListWindow")) {
+            renderFavoritesWindow();
+        }
+    });
 }
 
-function renderFavoritesWindow() {
+
+
+async function renderFavoritesWindow() {
     const container = document.getElementById("favoritesListWindow");
     if (!container) return;
 
-    const favs = getFavorites();
+    const favs = await getFavorites();
     container.innerHTML = "";
 
     favs.forEach(job => {
@@ -1141,13 +1168,15 @@ function openJobWindow(link, title) {
 }
 
 function favoriteFromWindow(title, link) {
-    let favs = getFavorites();
-    if (!favs.some(j => j.link === link)) {
-        favs.push({ title, link });
-        saveFavorites(favs);
-        renderFavorites();
-    }
+    fetch("/api/favorites/add", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({link, title})
+    }).then(() => {
+        renderFavoritesWindow();
+    });
 }
+
 
 function pinWindow(el) {
     const win = el.closest(".job-window");
@@ -1426,11 +1455,15 @@ window.onload = function() {
 };
 
 function removeFavorite(link) {
-    let favs = getFavorites();
-    favs = favs.filter(j => j.link !== link);
-    saveFavorites(favs);
-    renderFavoritesWindow();
+    fetch("/api/favorites/remove", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({link})
+    }).then(() => {
+        renderFavoritesWindow();
+    });
 }
+
 
 window.initialVisibleJobs = {{ jobs|length }};
 window.totalJobs = {{ total_jobs }};

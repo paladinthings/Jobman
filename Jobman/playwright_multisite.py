@@ -3,8 +3,33 @@ import pandas as pd
 from datetime import datetime
 import time
 import os
+import sqlite3
 
-CSV_FILE = "jobs.csv"
+DB_FILE = "jobs.db"
+
+
+def save_jobs_to_db(jobs):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+
+    for job in jobs:
+        cursor.execute("""
+            INSERT OR IGNORE INTO jobs
+            (title, company, location, link, source, description, scraped_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            job.get("title", ""),
+            job.get("company", ""),
+            job.get("location", ""),
+            job.get("link", ""),
+            job.get("source", ""),
+            job.get("description", ""),
+            job.get("scraped_at", "")
+        ))
+
+    conn.commit()
+    conn.close()
+
 SOURCE_FILE = "sources.txt"
 
 
@@ -43,7 +68,7 @@ def load_sources():
 # ==============================
 # JOBS.CH SCRAPER
 # ==============================
-def scrape_jobs_ch(page, keyword, location, max_pages=200):
+def scrape_jobs_ch(page, keyword, location, max_pages=1):
     jobs = []
 
     for p in range(1, max_pages + 1):
@@ -167,7 +192,7 @@ def scrape_indeed(page, keyword, location, max_pages=200):
 # ==============================
 # CAREERJET SCRAPER
 # ==============================
-def scrape_careerjet(page, keyword, location, max_pages=200):
+def scrape_careerjet(page, keyword, location, max_pages=1):
     jobs = []
 
     for p in range(1, max_pages + 1):
@@ -217,23 +242,6 @@ def scrape_careerjet(page, keyword, location, max_pages=200):
     return jobs
 
 
-# ==============================
-# CSV STORAGE
-# ==============================
-def save_to_csv(jobs):
-    new_df = pd.DataFrame(jobs)
-
-    if os.path.exists(CSV_FILE):
-        existing_df = pd.read_csv(CSV_FILE)
-        combined = pd.concat([existing_df, new_df], ignore_index=True)
-    else:
-        combined = new_df
-
-    text_fields = ["title", "company", "location", "source"]
-    combined.drop_duplicates(subset=text_fields, inplace=True)
-
-    combined.to_csv(CSV_FILE, index=False)
-    print(f"CSV updated. Total entries: {len(combined)}\n")
 
 # ==============================
 # MAIN SCRAPER
@@ -271,8 +279,9 @@ def run_scraper():
         browser.close()
 
     if all_jobs:
-        save_to_csv(all_jobs)
-        print(f"{len(all_jobs)} jobs exportiert.")
+        save_jobs_to_db(all_jobs)
+        print(f"{len(all_jobs)} jobs saved to database.")
+    
     else:
         print("No jobs found.")
 

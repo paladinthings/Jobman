@@ -1,22 +1,23 @@
 from flask import Flask, render_template, request, jsonify
+import sqlite3
 import pandas as pd
 import os
 import requests
 from bs4 import BeautifulSoup
+from datetime import datetime
 
 app = Flask(__name__)
 
-CSV_FILE = "jobs.csv"
+DB_FILE = "jobs.db"
 
+def get_db():
+    return sqlite3.connect(DB_FILE)
 
 def load_jobs():
-    if not os.path.exists(CSV_FILE):
-        return pd.DataFrame(columns=[
-            "title", "company", "location",
-            "link", "source", "description", "scraped_at"
-        ])
-    return pd.read_csv(CSV_FILE)
-
+    conn = sqlite3.connect(DB_FILE)
+    df = pd.read_sql_query("SELECT * FROM jobs", conn)
+    conn.close()
+    return df
 
 @app.route("/")
 def index():
@@ -40,6 +41,66 @@ def index():
     jobs = df.sort_values(by="scraped_at", ascending=False).to_dict(orient="records")
     return render_template("index.html", jobs=jobs, total_jobs=total_jobs)
 
+@app.route("/api/favorites", methods=["GET"])
+def api_get_favorites():
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT job_link, title FROM favorites")
+        rows = cursor.fetchall()
+        conn.close()
+
+        data = [{"link": r[0], "title": r[1]} for r in rows]
+        return jsonify(data)
+
+    except Exception as e:
+        print("Favorites GET error:", e)
+        return jsonify([]), 500
+
+
+@app.route("/api/favorites/add", methods=["POST"])
+def api_add_favorite():
+    try:
+        data = request.json
+        link = data.get("link")
+        title = data.get("title")
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT OR IGNORE INTO favorites (job_link, title, created_at)
+            VALUES (?, ?, ?)
+        """, (link, title, datetime.now().isoformat()))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({"status": "ok"})
+
+    except Exception as e:
+        print("Favorites ADD error:", e)
+        return jsonify({"status": "error"}), 500
+
+
+@app.route("/api/favorites/remove", methods=["POST"])
+def api_remove_favorite():
+    try:
+        data = request.json
+        link = data.get("link")
+
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM favorites WHERE job_link = ?", (link,))
+        conn.commit()
+        conn.close()
+
+        return jsonify({"status": "ok"})
+
+    except Exception as e:
+        print("Favorites REMOVE error:", e)
+        return jsonify({"status": "error"}), 500
 
 
 # ==============================
