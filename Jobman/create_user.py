@@ -4,9 +4,9 @@ from datetime import datetime
 
 DB_FILE = "jobs.db"
 
-username = "admin2"
-password = "admin123"   # change later
-role = "admin"
+username = "Daniel"
+password = "user"   # change later
+role = "user"
 
 conn = sqlite3.connect(DB_FILE)
 cursor = conn.cursor()
@@ -24,4 +24,4 @@ VALUES (?, ?, ?, ?)
 conn.commit()
 conn.close()
 
-print("Admin user created.")
+print("user created.")

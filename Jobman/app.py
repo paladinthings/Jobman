@@ -6,6 +6,8 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
+from functools import wraps
+
 
 app = Flask(__name__)
 app.secret_key = "change-this-to-a-random-secret"
@@ -14,6 +16,25 @@ DB_FILE = "jobs.db"
 
 def get_db():
     return sqlite3.connect(DB_FILE)
+
+def current_user_role():
+    return session.get("role", "user")
+    
+
+def role_required(role):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if "user_id" not in session:
+                return redirect(url_for("login"))
+
+            if session.get("role") != role:
+                return "Access denied", 403
+
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+  
 
 def load_jobs():
     conn = sqlite3.connect(DB_FILE)
@@ -51,6 +72,11 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for("login"))
+
+@app.route("/admin")
+@role_required("admin")
+def admin_panel():
+    return "<h1>Admin Panel</h1><p>Only admins can see this.</p>"
 
 
 @app.route("/")

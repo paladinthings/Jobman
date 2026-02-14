@@ -593,6 +593,9 @@
     <span id="jobCounter" class="job-counter">0 jobs</span>
 	<span class="user-display">
     {{ username }}
+    {% if session.role == "admin" %}
+        | <a href="/admin">Admin</a>
+    {% endif %}
     <a href="/logout" class="logout-link">Logout</a>
 	</span>
 </div>
