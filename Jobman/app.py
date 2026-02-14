@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from werkzeug.security import check_password_hash
 import sqlite3
 import pandas as pd
 import os
@@ -7,6 +8,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 app = Flask(__name__)
+app.secret_key = "change-this-to-a-random-secret"
 
 DB_FILE = "jobs.db"
 
@@ -19,8 +21,45 @@ def load_jobs():
     conn.close()
     return df
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT id, password_hash, role
+            FROM users
+            WHERE username = ?
+        """, (username,))
+        user = cursor.fetchone()
+        conn.close()
+
+        if user and check_password_hash(user[1], password):
+            session["user_id"] = user[0]
+            session["role"] = user[2]
+            return redirect(url_for("index"))
+
+        return render_template("login.html", error="Invalid credentials")
+
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
+@app.route("/")
 @app.route("/")
 def index():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    df = load_jobs()
     df = load_jobs()
 
     keyword = request.args.get("keyword", "").lower()

@@ -65,6 +65,17 @@ def init_db():
         created_at TEXT
     )
     """)
+    
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        password_hash TEXT,
+        role TEXT,
+        created_at TEXT
+    )
+    """)
+
 
 
 
