@@ -54,7 +54,6 @@ def logout():
 
 
 @app.route("/")
-@app.route("/")
 def index():
     if "user_id" not in session:
         return redirect(url_for("login"))
@@ -82,75 +81,90 @@ def index():
 
 @app.route("/api/favorites", methods=["GET"])
 def api_get_favorites():
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
+    if "user_id" not in session:
+        return jsonify([])
 
-        cursor.execute("SELECT job_link, title FROM favorites")
-        rows = cursor.fetchall()
-        conn.close()
+    conn = get_db()
+    cursor = conn.cursor()
 
-        data = [{"link": r[0], "title": r[1]} for r in rows]
-        return jsonify(data)
+    cursor.execute("""
+        SELECT job_link, title
+        FROM favorites
+        WHERE user_id = ?
+    """, (session["user_id"],))
 
-    except Exception as e:
-        print("Favorites GET error:", e)
-        return jsonify([]), 500
+    rows = cursor.fetchall()
+    conn.close()
+
+    data = [{"link": r[0], "title": r[1]} for r in rows]
+    return jsonify(data)
 
 
 @app.route("/api/favorites/add", methods=["POST"])
 def api_add_favorite():
-    try:
-        data = request.json
-        link = data.get("link")
-        title = data.get("title")
+    if "user_id" not in session:
+        return jsonify({"status": "error"}), 403
 
-        conn = get_db()
-        cursor = conn.cursor()
+    data = request.json
+    link = data.get("link")
+    title = data.get("title")
 
-        cursor.execute("""
-            INSERT OR IGNORE INTO favorites (job_link, title, created_at)
-            VALUES (?, ?, ?)
-        """, (link, title, datetime.now().isoformat()))
+    conn = get_db()
+    cursor = conn.cursor()
 
-        conn.commit()
-        conn.close()
+    cursor.execute("""
+        INSERT INTO favorites (user_id, job_link, title, created_at)
+        VALUES (?, ?, ?, ?)
+    """, (
+        session["user_id"],
+        link,
+        title,
+        datetime.now().isoformat()
+    ))
 
-        return jsonify({"status": "ok"})
+    conn.commit()
+    conn.close()
 
-    except Exception as e:
-        print("Favorites ADD error:", e)
-        return jsonify({"status": "error"}), 500
-
+    return jsonify({"status": "ok"})
 
 @app.route("/api/favorites/remove", methods=["POST"])
 def api_remove_favorite():
-    try:
-        data = request.json
-        link = data.get("link")
+    if "user_id" not in session:
+        return jsonify({"status": "error"}), 403
 
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM favorites WHERE job_link = ?", (link,))
-        conn.commit()
-        conn.close()
+    data = request.json
+    link = data.get("link")
 
-        return jsonify({"status": "ok"})
+    conn = get_db()
+    cursor = conn.cursor()
 
-    except Exception as e:
-        print("Favorites REMOVE error:", e)
-        return jsonify({"status": "error"}), 500
+    cursor.execute("""
+        DELETE FROM favorites
+        WHERE job_link = ?
+        AND user_id = ?
+    """, (link, session["user_id"]))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
 
 @app.route("/api/tasks", methods=["GET"])
 def api_get_tasks():
+    if "user_id" not in session:
+        return jsonify([])
+
     conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
         SELECT id, title, due, details, done
         FROM tasks
+        WHERE user_id = ?
         ORDER BY created_at DESC
-    """)
+    """, (session["user_id"],))
+
     rows = cursor.fetchall()
     conn.close()
 
@@ -168,15 +182,19 @@ def api_get_tasks():
 
 @app.route("/api/tasks/add", methods=["POST"])
 def api_add_task():
+    if "user_id" not in session:
+        return jsonify({"status": "error"}), 403
+
     data = request.json
 
     conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
-        INSERT INTO tasks (title, due, details, done, created_at)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO tasks (user_id, title, due, details, done, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
     """, (
+        session["user_id"],
         data.get("title", ""),
         data.get("due", ""),
         data.get("details", ""),
@@ -191,12 +209,21 @@ def api_add_task():
 
 @app.route("/api/tasks/delete", methods=["POST"])
 def api_delete_task():
+    if "user_id" not in session:
+        return jsonify({"status": "error"}), 403
+
     data = request.json
     task_id = data.get("id")
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+
+    cursor.execute("""
+        DELETE FROM tasks
+        WHERE id = ?
+        AND user_id = ?
+    """, (task_id, session["user_id"]))
+
     conn.commit()
     conn.close()
 
@@ -204,6 +231,9 @@ def api_delete_task():
 
 @app.route("/api/tasks/toggle", methods=["POST"])
 def api_toggle_task():
+    if "user_id" not in session:
+        return jsonify({"status": "error"}), 403
+
     data = request.json
     task_id = data.get("id")
 
@@ -214,7 +244,8 @@ def api_toggle_task():
         UPDATE tasks
         SET done = CASE WHEN done = 1 THEN 0 ELSE 1 END
         WHERE id = ?
-    """, (task_id,))
+        AND user_id = ?
+    """, (task_id, session["user_id"]))
 
     conn.commit()
     conn.close()
@@ -223,10 +254,20 @@ def api_toggle_task():
 
 @app.route("/api/notes", methods=["GET"])
 def api_get_notes():
+    if "user_id" not in session:
+        return jsonify({"content": ""})
+
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT content FROM notes ORDER BY id DESC LIMIT 1")
+    cursor.execute("""
+        SELECT content
+        FROM notes
+        WHERE user_id = ?
+        ORDER BY id DESC
+        LIMIT 1
+    """, (session["user_id"],))
+
     row = cursor.fetchone()
     conn.close()
 
@@ -237,20 +278,30 @@ def api_get_notes():
 
 @app.route("/api/notes/save", methods=["POST"])
 def api_save_notes():
+    if "user_id" not in session:
+        return jsonify({"status": "error"}), 403
+
     data = request.json
     content = data.get("content", "")
 
     conn = get_db()
     cursor = conn.cursor()
 
-    # Clear old note
-    cursor.execute("DELETE FROM notes")
+    # Remove old notes for this user
+    cursor.execute("""
+        DELETE FROM notes
+        WHERE user_id = ?
+    """, (session["user_id"],))
 
     # Insert new note
     cursor.execute("""
-        INSERT INTO notes (content, updated_at)
-        VALUES (?, ?)
-    """, (content, datetime.now().isoformat()))
+        INSERT INTO notes (user_id, content, updated_at)
+        VALUES (?, ?, ?)
+    """, (
+        session["user_id"],
+        content,
+        datetime.now().isoformat()
+    ))
 
     conn.commit()
     conn.close()
@@ -263,38 +314,57 @@ def api_get_chat():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT message, created_at
+        SELECT username, message, created_at
         FROM chat_messages
-        ORDER BY id ASC
-        LIMIT 200
+        ORDER BY id DESC
+        LIMIT 100
     """)
+
     rows = cursor.fetchall()
     conn.close()
 
     messages = []
     for r in rows:
         messages.append({
-            "text": r[0],
-            "time": r[1]
+            "username": r[0],
+            "message": r[1],
+            "time": r[2]
         })
 
     return jsonify(messages)
 
 @app.route("/api/chat/send", methods=["POST"])
 def api_send_chat():
-    data = request.json
-    text = data.get("text", "").strip()
+    if "user_id" not in session:
+        return jsonify({"status": "error"}), 403
 
-    if not text:
-        return jsonify({"status": "empty"})
+    data = request.json
+    message = data.get("message", "").strip()
+
+    if not message:
+        return jsonify({"status": "error"})
 
     conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
-        INSERT INTO chat_messages (message, created_at)
-        VALUES (?, ?)
-    """, (text, datetime.now().strftime("%H:%M:%S")))
+        SELECT username
+        FROM users
+        WHERE id = ?
+    """, (session["user_id"],))
+
+    user = cursor.fetchone()
+    username = user[0] if user else "unknown"
+
+    cursor.execute("""
+        INSERT INTO chat_messages (user_id, username, message, created_at)
+        VALUES (?, ?, ?, ?)
+    """, (
+        session["user_id"],
+        username,
+        message,
+        datetime.now().isoformat()
+    ))
 
     conn.commit()
     conn.close()
@@ -303,13 +373,18 @@ def api_send_chat():
 
 @app.route("/api/kanban", methods=["GET"])
 def api_get_kanban():
+    if "user_id" not in session:
+        return jsonify({})
+
     conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
         SELECT title, link, column_name
         FROM kanban_cards
-    """)
+        WHERE user_id = ?
+    """, (session["user_id"],))
+
     rows = cursor.fetchall()
     conn.close()
 
@@ -326,21 +401,28 @@ def api_get_kanban():
 
 @app.route("/api/kanban/save", methods=["POST"])
 def api_save_kanban():
+    if "user_id" not in session:
+        return jsonify({"status": "error"}), 403
+
     data = request.json or {}
 
     conn = get_db()
     cursor = conn.cursor()
 
-    # Clear old board
-    cursor.execute("DELETE FROM kanban_cards")
+    # Clear old board for this user
+    cursor.execute("""
+        DELETE FROM kanban_cards
+        WHERE user_id = ?
+    """, (session["user_id"],))
 
     # Insert all cards
     for column, cards in data.items():
         for card in cards:
             cursor.execute("""
-                INSERT INTO kanban_cards (title, link, column_name, created_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO kanban_cards (user_id, title, link, column_name, created_at)
+                VALUES (?, ?, ?, ?, ?)
             """, (
+                session["user_id"],
                 card.get("title"),
                 card.get("link"),
                 column,
