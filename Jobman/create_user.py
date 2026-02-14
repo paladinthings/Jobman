@@ -4,7 +4,7 @@ from datetime import datetime
 
 DB_FILE = "jobs.db"
 
-username = "admin"
+username = "admin2"
 password = "admin123"   # change later
 role = "admin"
 

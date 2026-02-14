@@ -559,6 +559,22 @@
     opacity: 0.6;
 }
 
+.user-display {
+    margin-left: 15px;
+    font-weight: bold;
+}
+
+.logout-link {
+    margin-left: 8px;
+    color: #e74c3c;
+    text-decoration: none;
+    font-size: 12px;
+}
+
+.logout-link:hover {
+    text-decoration: underline;
+}
+
 
     </style>
 </head>
@@ -575,6 +591,10 @@
     <span class="install-btn" onclick="manualSaveWorkspace()" title="Save layout">💾</span>
     <span class="install-btn" onclick="closeAllWindows()" title="Close all windows">●</span>
     <span id="jobCounter" class="job-counter">0 jobs</span>
+	<span class="user-display">
+    {{ username }}
+    <a href="/logout" class="logout-link">Logout</a>
+	</span>
 </div>
 
     </div>

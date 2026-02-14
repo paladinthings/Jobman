@@ -58,7 +58,19 @@ def index():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    df = load_jobs()
+    # Get username of logged-in user
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT username
+        FROM users
+        WHERE id = ?
+    """, (session["user_id"],))
+    row = cursor.fetchone()
+    conn.close()
+
+    username = row[0] if row else "unknown"
+
     df = load_jobs()
 
     keyword = request.args.get("keyword", "").lower()
@@ -77,7 +89,12 @@ def index():
     total_jobs = len(df)
 
     jobs = df.sort_values(by="scraped_at", ascending=False).to_dict(orient="records")
-    return render_template("index.html", jobs=jobs, total_jobs=total_jobs)
+    return render_template(
+        "index.html",
+        jobs=jobs,
+        total_jobs=total_jobs,
+        username=username
+    )
 
 @app.route("/api/favorites", methods=["GET"])
 def api_get_favorites():

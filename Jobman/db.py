@@ -23,15 +23,18 @@ def init_db():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS favorites (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        job_link TEXT UNIQUE,
+        user_id INTEGER,
+        job_link TEXT,
         title TEXT,
         created_at TEXT
     )
     """)
+
     
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
         title TEXT,
         due TEXT,
         details TEXT,
@@ -39,32 +42,40 @@ def init_db():
         created_at TEXT
     )
     """)
+
     
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS notes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
         content TEXT,
         updated_at TEXT
     )
     """)
+
     
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS chat_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        username TEXT,
         message TEXT,
         created_at TEXT
     )
     """)
+
     
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS kanban_cards (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
         title TEXT,
         link TEXT,
         column_name TEXT,
         created_at TEXT
     )
     """)
+
     
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
@@ -75,12 +86,7 @@ def init_db():
         created_at TEXT
     )
     """)
-
-
-
-
-
-
+    
     
     conn.commit()
     conn.close()
