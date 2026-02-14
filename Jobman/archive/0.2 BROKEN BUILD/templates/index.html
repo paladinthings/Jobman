@@ -1295,7 +1295,7 @@ function openKanbanWindow() {
 	makeDraggable(win, "kanban");
 
     initKanban();
-    loadKanban();
+    loadKanbanFromDB();
 }
 
 function initKanban() {
@@ -1313,27 +1313,48 @@ function initKanban() {
                 }
             });
 
-            addCardToColumn(data.title, data.link, col.dataset.col);
-            saveKanban();
+            fetch("/api/kanban/add", {
+			method: "POST",
+			headers: {"Content-Type": "application/json"},
+			body: JSON.stringify({
+			title: data.title,
+			link: data.link,
+			column: col.dataset.col
+    })
+}).then(() => {
+    renderKanban();
+});
+
         };
     });
 }
 
 
-function addCardToColumn(title, link, columnName) {
-    const col = document.querySelector(`.kanban-column[data-col="${columnName}"]`);
-    if (!col) return;
+fetch("/api/kanban/add", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+        title: title,
+        link: link,
+        column: "Beworben"
+    })
+}).then(() => {
+    renderKanban();
+});
 
-    const card = document.createElement("div");
-    card.className = "kanban-card";
-    card.draggable = true;
-    card.dataset.title = title;
-    card.dataset.link = link;
+const id = card.dataset.id;
 
-    card.innerHTML = `
-        ${title}
-        <span class="delete-card">✖</span>
-    `;
+fetch("/api/kanban/move", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+        id: id,
+        column: col.dataset.col
+    })
+}).then(() => {
+    renderKanban();
+});
+
 
     // Delete button
     const removeBtn = card.querySelector(".delete-card");
@@ -1352,35 +1373,43 @@ function addCardToColumn(title, link, columnName) {
     };
 
     col.appendChild(card);
+
+
+
+async function getKanban() {
+    const res = await fetch("/api/kanban");
+    return await res.json();
 }
 
+async function loadKanbanFromDB() {
+    const cards = await getKanban();
 
-function saveKanban() {
-    const data = {};
-    document.querySelectorAll(".kanban-column").forEach(col => {
-        const colName = col.dataset.col;
-        data[colName] = [];
-
-        col.querySelectorAll(".kanban-card").forEach(card => {
-            data[colName].push({
-                title: card.dataset.title,
-                link: card.dataset.link
-            });
-        });
+    cards.forEach(card => {
+        addCardToColumn(card.title, card.link, card.column, card.id);
     });
-
-    localStorage.setItem("kanbanData", JSON.stringify(data));
 }
 
-function loadKanban() {
-    const data = JSON.parse(localStorage.getItem("kanbanData") || "{}");
+removeBtn.onclick = (e) => {
+    e.stopPropagation();
 
-    for (let colName in data) {
-        data[colName].forEach(job => {
-            addCardToColumn(job.title, job.link, colName);
-        });
-    }
+    const id = card.dataset.id;
+    if (!id) return;
+
+    fetch("/api/kanban/delete", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({id})
+    }).then(() => {
+        renderKanban();
+    });
+};
+
+async function renderKanban() {
+    document.querySelectorAll(".kanban-card").forEach(c => c.remove());
+    await loadKanbanFromDB();
 }
+
+
 
 function startInstallBar() {
     const bar = document.getElementById("installProgress");
@@ -1519,7 +1548,7 @@ async function renderTasks() {
 
         html += `
             <tr class="${doneClass}">
-                <td onclick="openTaskDetail(${task.id})" style="cursor:pointer;">
+                <td onclick="openTaskDetail(${task.id})"style="cursor:pointer;">
                     ${task.title}
                 </td>
                 <td>${task.due || ""}</td>
@@ -1603,7 +1632,6 @@ function addTask() {
         document.getElementById("taskNewWindow").remove();
     });
 }
-
 
 
 

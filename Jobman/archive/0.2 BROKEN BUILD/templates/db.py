@@ -28,18 +28,6 @@ def init_db():
         created_at TEXT
     )
     """)
-    
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        due TEXT,
-        details TEXT,
-        done INTEGER,
-        created_at TEXT
-    )
-    """)
-
 
     
     conn.commit()

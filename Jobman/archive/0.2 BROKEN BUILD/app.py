@@ -182,6 +182,85 @@ def api_toggle_task():
 
     return jsonify({"status": "ok"})
 
+@app.route("/api/kanban", methods=["GET"])
+def api_get_kanban():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, title, link, column_name
+        FROM kanban_cards
+        ORDER BY created_at ASC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+
+    cards = []
+    for r in rows:
+        cards.append({
+            "id": r[0],
+            "title": r[1],
+            "link": r[2],
+            "column": r[3]
+        })
+
+    return jsonify(cards)
+
+@app.route("/api/kanban/add", methods=["POST"])
+def api_add_kanban():
+    data = request.json
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO kanban_cards (title, link, column_name, created_at)
+        VALUES (?, ?, ?, ?)
+    """, (
+        data.get("title", ""),
+        data.get("link", ""),
+        data.get("column", "Beworben"),
+        datetime.now().isoformat()
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
+@app.route("/api/kanban/move", methods=["POST"])
+def api_move_kanban():
+    data = request.json
+    card_id = data.get("id")
+    column = data.get("column")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE kanban_cards
+        SET column_name = ?
+        WHERE id = ?
+    """, (column, card_id))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
+@app.route("/api/kanban/delete", methods=["POST"])
+def api_delete_kanban():
+    data = request.json
+    card_id = data.get("id")
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM kanban_cards WHERE id = ?", (card_id,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
 
 # ==============================
 # FETCH JOB DETAILS LIVE

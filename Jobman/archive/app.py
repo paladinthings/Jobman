@@ -108,7 +108,7 @@ def api_get_tasks():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT id, title, due, details, done
+        SELECT id, title, description, due_date, status
         FROM tasks
         ORDER BY created_at DESC
     """)
@@ -120,9 +120,9 @@ def api_get_tasks():
         tasks.append({
             "id": r[0],
             "title": r[1],
-            "due": r[2],
-            "details": r[3],
-            "done": bool(r[4])
+            "description": r[2],
+            "due_date": r[3],
+            "status": r[4]
         })
 
     return jsonify(tasks)
@@ -135,13 +135,13 @@ def api_add_task():
     cursor = conn.cursor()
 
     cursor.execute("""
-        INSERT INTO tasks (title, due, details, done, created_at)
+        INSERT INTO tasks (title, description, due_date, status, created_at)
         VALUES (?, ?, ?, ?, ?)
     """, (
         data.get("title", ""),
-        data.get("due", ""),
-        data.get("details", ""),
-        0,
+        data.get("description", ""),
+        data.get("due_date", ""),
+        "open",
         datetime.now().isoformat()
     ))
 
@@ -163,20 +163,18 @@ def api_delete_task():
 
     return jsonify({"status": "ok"})
 
-@app.route("/api/tasks/toggle", methods=["POST"])
-def api_toggle_task():
+@app.route("/api/tasks/complete", methods=["POST"])
+def api_complete_task():
     data = request.json
     task_id = data.get("id")
 
     conn = get_db()
     cursor = conn.cursor()
-
     cursor.execute("""
         UPDATE tasks
-        SET done = CASE WHEN done = 1 THEN 0 ELSE 1 END
+        SET status = 'done'
         WHERE id = ?
     """, (task_id,))
-
     conn.commit()
     conn.close()
 
