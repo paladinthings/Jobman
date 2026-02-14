@@ -262,6 +262,57 @@ def api_send_chat():
 
     return jsonify({"status": "ok"})
 
+@app.route("/api/kanban", methods=["GET"])
+def api_get_kanban():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT title, link, column_name
+        FROM kanban_cards
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+
+    data = {}
+    for title, link, column in rows:
+        if column not in data:
+            data[column] = []
+        data[column].append({
+            "title": title,
+            "link": link
+        })
+
+    return jsonify(data)
+
+@app.route("/api/kanban/save", methods=["POST"])
+def api_save_kanban():
+    data = request.json or {}
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Clear old board
+    cursor.execute("DELETE FROM kanban_cards")
+
+    # Insert all cards
+    for column, cards in data.items():
+        for card in cards:
+            cursor.execute("""
+                INSERT INTO kanban_cards (title, link, column_name, created_at)
+                VALUES (?, ?, ?, ?)
+            """, (
+                card.get("title"),
+                card.get("link"),
+                column,
+                datetime.now().isoformat()
+            ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
 
 # ==============================
 # FETCH JOB DETAILS LIVE

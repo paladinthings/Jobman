@@ -55,6 +55,17 @@ def init_db():
         created_at TEXT
     )
     """)
+    
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS kanban_cards (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        link TEXT,
+        column_name TEXT,
+        created_at TEXT
+    )
+    """)
+
 
 
 

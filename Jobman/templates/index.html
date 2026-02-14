@@ -898,9 +898,9 @@ function getWindowContent(win) {
     }
 
     if (win.id === "kanbanWindow") {
-        const data = JSON.parse(localStorage.getItem("kanbanData") || "{}");
-        return data;
-    }
+		return null;
+	}
+
 
     if (win.id === "favoritesWindow") {
         return JSON.parse(localStorage.getItem("favorites") || "[]");
@@ -933,10 +933,9 @@ function restoreWorkspace() {
         }
 
         else if (w.id === "kanbanWindow") {
-            localStorage.setItem("kanbanData", JSON.stringify(w.content || {}));
-            openKanbanWindow();
-            win = document.getElementById("kanbanWindow");
-        }
+			openKanbanWindow();
+			win = document.getElementById("kanbanWindow");
+}
 
         else if (w.id === "favoritesWindow") {
             localStorage.setItem("favorites", JSON.stringify(w.content || []));
@@ -1359,6 +1358,7 @@ function addCardToColumn(title, link, columnName) {
 
 function saveKanban() {
     const data = {};
+
     document.querySelectorAll(".kanban-column").forEach(col => {
         const colName = col.dataset.col;
         data[colName] = [];
@@ -1371,18 +1371,26 @@ function saveKanban() {
         });
     });
 
-    localStorage.setItem("kanbanData", JSON.stringify(data));
+    fetch("/api/kanban/save", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    });
 }
+
 
 function loadKanban() {
-    const data = JSON.parse(localStorage.getItem("kanbanData") || "{}");
-
-    for (let colName in data) {
-        data[colName].forEach(job => {
-            addCardToColumn(job.title, job.link, colName);
+    fetch("/api/kanban")
+        .then(res => res.json())
+        .then(data => {
+            for (let colName in data) {
+                data[colName].forEach(job => {
+                    addCardToColumn(job.title, job.link, colName);
+                });
+            }
         });
-    }
 }
+
 
 function startInstallBar() {
     const bar = document.getElementById("installProgress");
