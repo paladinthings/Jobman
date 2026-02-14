@@ -43,7 +43,7 @@ def load_sources():
 # ==============================
 # JOBS.CH SCRAPER
 # ==============================
-def scrape_jobs_ch(page, keyword, location, max_pages=3):
+def scrape_jobs_ch(page, keyword, location, max_pages=200):
     jobs = []
 
     for p in range(1, max_pages + 1):
@@ -80,7 +80,7 @@ def scrape_jobs_ch(page, keyword, location, max_pages=3):
 # ==============================
 # JOBSCOUT24 SCRAPER
 # ==============================
-def scrape_jobscout24(page, keyword, location, max_pages=3):
+def scrape_jobscout24(page, keyword, location, max_pages=200):
     jobs = []
 
     for p in range(1, max_pages + 1):
@@ -121,7 +121,7 @@ def scrape_jobscout24(page, keyword, location, max_pages=3):
 # ==============================
 # INDEED SCRAPER
 # ==============================
-def scrape_indeed(page, keyword, location, max_pages=3):
+def scrape_indeed(page, keyword, location, max_pages=200):
     jobs = []
 
     for p in range(max_pages):
@@ -165,27 +165,9 @@ def scrape_indeed(page, keyword, location, max_pages=3):
 
 
 # ==============================
-# CSV STORAGE
-# ==============================
-def save_to_csv(jobs):
-    new_df = pd.DataFrame(jobs)
-
-    if os.path.exists(CSV_FILE):
-        existing_df = pd.read_csv(CSV_FILE)
-        combined = pd.concat([existing_df, new_df], ignore_index=True)
-    else:
-        combined = new_df
-
-    text_fields = ["title", "company", "location", "source"]
-    combined.drop_duplicates(subset=text_fields, inplace=True)
-
-    combined.to_csv(CSV_FILE, index=False)
-    print(f"CSV updated. Total entries: {len(combined)}\n")
-
-# ==============================
 # CAREERJET SCRAPER
 # ==============================
-def scrape_careerjet(page, keyword, location, max_pages=3):
+def scrape_careerjet(page, keyword, location, max_pages=200):
     jobs = []
 
     for p in range(1, max_pages + 1):
@@ -235,7 +217,23 @@ def scrape_careerjet(page, keyword, location, max_pages=3):
     return jobs
 
 
+# ==============================
+# CSV STORAGE
+# ==============================
+def save_to_csv(jobs):
+    new_df = pd.DataFrame(jobs)
 
+    if os.path.exists(CSV_FILE):
+        existing_df = pd.read_csv(CSV_FILE)
+        combined = pd.concat([existing_df, new_df], ignore_index=True)
+    else:
+        combined = new_df
+
+    text_fields = ["title", "company", "location", "source"]
+    combined.drop_duplicates(subset=text_fields, inplace=True)
+
+    combined.to_csv(CSV_FILE, index=False)
+    print(f"CSV updated. Total entries: {len(combined)}\n")
 
 # ==============================
 # MAIN SCRAPER

@@ -1,4 +1,28 @@
+careerjet.ch|Sachbearbeiter|
 careerjet.ch|Koch|
+careerjet.ch|Gastro|
+careerjet.ch|Betreuung|
+careerjet.ch|Sicherheit|
+careerjet.ch|Produktion|
+careerjet.ch|Servier|
+careerjet.ch|Mitarbeiter|
+careerjet.ch|Schreiner|
+careerjet.ch|Service|
+careerjet.ch|Maurer|
+careerjet.ch|Bau|
+careerjet.ch|Allrounder|
+careerjet.ch|Zusteller|
+careerjet.ch|Verkäufer|
+careerjet.ch||Bern
+careerjet.ch||Zürich
+careerjet.ch||Basel
+careerjet.ch||Solothurn
+careerjet.ch||Biel
+careerjet.ch||Thun
+careerjet.ch|Koch|
+
+27k
+
 jobs.ch||Bern
 jobs.ch|ICT|Bern
 jobs.ch|Sachbearbeiter|
@@ -23,6 +47,8 @@ jobs.ch||Solothurn
 jobs.ch||Biel
 jobs.ch||Thun
 
+138k
+
 jobscout24.ch|ICT|Bern
 jobscout24.ch|Sachbearbeiter|
 jobscout24.ch|Koch|
@@ -40,4 +66,7 @@ jobscout24.ch|Allrounder|
 jobscout24.ch|Zusteller|
 jobscout24.ch|Verkäufer|
 
+130k
+
+=ca 295k jobs
 
