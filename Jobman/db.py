@@ -47,6 +47,15 @@ def init_db():
         updated_at TEXT
     )
     """)
+    
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS chat_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message TEXT,
+        created_at TEXT
+    )
+    """)
+
 
 
 

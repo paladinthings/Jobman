@@ -218,6 +218,50 @@ def api_save_notes():
 
     return jsonify({"status": "ok"})
 
+@app.route("/api/chat", methods=["GET"])
+def api_get_chat():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT message, created_at
+        FROM chat_messages
+        ORDER BY id ASC
+        LIMIT 200
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+
+    messages = []
+    for r in rows:
+        messages.append({
+            "text": r[0],
+            "time": r[1]
+        })
+
+    return jsonify(messages)
+
+@app.route("/api/chat/send", methods=["POST"])
+def api_send_chat():
+    data = request.json
+    text = data.get("text", "").strip()
+
+    if not text:
+        return jsonify({"status": "empty"})
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO chat_messages (message, created_at)
+        VALUES (?, ?)
+    """, (text, datetime.now().strftime("%H:%M:%S")))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
 
 # ==============================
 # FETCH JOB DETAILS LIVE
